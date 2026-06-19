@@ -19,7 +19,7 @@ export default function AlertsPage() {
     const fetchAlerts = async () => {
       setLoading(true);
       try {
-        const data = await api.listAlerts(selectedDevice.device_id, {
+        const data = await api.listAlerts(selectedDevice.id, {
           limit,
           offset,
           severity: severity || undefined,

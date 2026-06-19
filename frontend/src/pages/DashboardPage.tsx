@@ -40,7 +40,7 @@ export default function DashboardPage() {
     const fetchData = async () => {
       setLoading(true);
       try {
-        const telData = await api.getTelemetryHistory(selectedDevice.device_id, interval);
+        const telData = await api.getTelemetryHistory(selectedDevice.id, interval);
         setTelemetry(telData);
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
@@ -137,7 +137,7 @@ export default function DashboardPage() {
               <div className="absolute right-0 top-full mt-2 w-48 organic-card p-2 z-50">
                 {devices.map(d => (
                   <button
-                    key={d.device_id}
+                    key={d.id}
                     className="w-full text-left px-4 py-2 rounded-xl text-sm font-medium hover:bg-background text-text-primary"
                     onClick={() => { selectDevice(d); setShowDeviceSelect(false); }}
                   >

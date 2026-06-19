@@ -3,7 +3,7 @@ import { api } from '../api/client';
 import { useAuth } from './AuthContext';
 
 interface Device {
-  device_id: string;
+  id: string;
   hardware_uid: string;
   display_name: string;
   is_paired: boolean;

@@ -31,8 +31,8 @@ export default function CompostPage() {
   const fetchData = async () => {
     try {
       const [c, w] = await Promise.all([
-        api.listCycles(selectedDevice.device_id),
-        api.listWasteLogs(selectedDevice.device_id),
+        api.listCycles(selectedDevice.id),
+        api.listWasteLogs(selectedDevice.id),
       ]);
       setCycles(c);
       setWasteLogs(w.items || []);
@@ -45,7 +45,7 @@ export default function CompostPage() {
     e.preventDefault();
     setIsSubmittingCycle(true);
     try {
-      await api.createCycle(selectedDevice.device_id, { label: cycleLabel, notes: cycleNotes });
+      await api.createCycle(selectedDevice.id, { label: cycleLabel, notes: cycleNotes });
       setCycleLabel('');
       setCycleNotes('');
       setShowNewCycle(false);
@@ -85,7 +85,7 @@ export default function CompostPage() {
     e.preventDefault();
     setIsSubmittingWaste(true);
     try {
-      await api.createWasteLog(selectedDevice.device_id, {
+      await api.createWasteLog(selectedDevice.id, {
         waste_type: wasteType,
         weight_kg: parseFloat(wasteWeight) || null,
         notes: wasteNotes || null,

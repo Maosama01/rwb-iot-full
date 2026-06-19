@@ -30,8 +30,8 @@ export default function DeviceSettingsPage() {
   const fetchSettings = async () => {
     try {
       const [cfg, mem] = await Promise.all([
-        api.getDeviceConfig(selectedDevice.device_id),
-        api.listMembers(selectedDevice.device_id),
+        api.getDeviceConfig(selectedDevice.id),
+        api.listMembers(selectedDevice.id),
       ]);
       setMembers(mem);
       setTempMax(cfg.temperature_c_max ?? '');
@@ -50,7 +50,7 @@ export default function DeviceSettingsPage() {
     e.preventDefault();
     setSaving(true);
     try {
-      await api.updateDeviceConfig(selectedDevice.device_id, {
+      await api.updateDeviceConfig(selectedDevice.id, {
         temperature_c_max: parseFloat(tempMax) || null,
         temperature_c_min: parseFloat(tempMin) || null,
         co2_ppm_max: parseFloat(co2Max) || null,
@@ -73,7 +73,7 @@ export default function DeviceSettingsPage() {
     if (!shareEmail) return;
     setSharing(true);
     try {
-      const updated = await api.shareDevice(selectedDevice.device_id, shareEmail);
+      const updated = await api.shareDevice(selectedDevice.id, shareEmail);
       setMembers(updated);
       setShareEmail('');
       success('Device shared successfully!');
@@ -89,7 +89,7 @@ export default function DeviceSettingsPage() {
   const handleRemoveMember = async (userId: string) => {
     setRemovingId(userId);
     try {
-      await api.removeMember(selectedDevice.device_id, userId);
+      await api.removeMember(selectedDevice.id, userId);
       setMembers(members.filter((m) => m.user_id !== userId));
       success('Member removed successfully.');
     } catch (err: any) {
