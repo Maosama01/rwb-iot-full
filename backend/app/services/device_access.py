@@ -50,7 +50,7 @@ async def assert_device_member(
 
 
 async def add_member(
-    db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUID
+    db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUID, is_owner: bool = False
 ) -> bool:
     """
     Link *user_id* to *device_id*. Idempotent.
@@ -59,9 +59,35 @@ async def add_member(
     """
     if await is_member(db, device_id, user_id):
         return False
-    db.add(UserDevice(device_id=device_id, user_id=user_id))
+    db.add(UserDevice(device_id=device_id, user_id=user_id, is_owner=is_owner))
     await db.flush()
     return True
+
+async def assert_device_owner(
+    db: AsyncSession, device_id: uuid.UUID, user_id: uuid.UUID
+) -> Device:
+    """
+    Load *device_id* and confirm *user_id* is the owner.
+
+    Returns the Device on success. Raises 404 if the device does not exist,
+    and 403 if the user is a member but not the owner.
+    """
+    device = await assert_device_member(db, device_id, user_id)
+    
+    result = await db.execute(
+        select(UserDevice.is_owner).where(
+            UserDevice.device_id == device_id,
+            UserDevice.user_id == user_id,
+        )
+    )
+    is_owner = result.scalar_one_or_none()
+    
+    if not is_owner:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Only the device owner can perform this action."
+        )
+    return device
 
 
 async def remove_member(

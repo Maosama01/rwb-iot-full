@@ -35,6 +35,7 @@ class UserDevice(Base, TimestampMixin):
         primary_key=True,
         index=True,  # fast "who are this device's members?" lookups
     )
+    is_owner: Mapped[bool] = mapped_column(default=False)
 
     # ── Relationships ─────────────────────────────────────────────────────────
     user: Mapped["User"] = relationship(  # noqa: F821

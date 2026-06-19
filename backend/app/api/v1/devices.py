@@ -98,7 +98,7 @@ async def pairing_challenge(
         )
         db.add(device)
         await db.flush()  # populate device.id
-        await device_access.add_member(db, device.id, current_user.id)
+        await device_access.add_member(db, device.id, current_user.id, is_owner=True)
     else:
         if not await device_access.is_member(db, device.id, current_user.id):
             raise HTTPException(
@@ -227,7 +227,7 @@ async def share_device(
     db: DbSession,
 ) -> list[DeviceMemberOut]:
     """Add an existing user (by email) as a member. Returns the updated member list."""
-    await device_access.assert_device_member(db, device_id, current_user.id)
+    await device_access.assert_device_owner(db, device_id, current_user.id)
 
     target = (
         await db.execute(select(User).where(User.email == body.email))
@@ -244,6 +244,26 @@ async def share_device(
         extra={"device_id": str(device_id), "with_user": str(target.id)},
     )
     return await _list_members(db, device_id)
+
+
+@router.delete(
+    "/{device_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Delete a device and all its data",
+)
+async def delete_device(
+    device_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> None:
+    """
+    Delete a device completely. Only the owner can do this.
+    Cascades to all device data (telemetry, config, user links).
+    """
+    device = await device_access.assert_device_owner(db, device_id, current_user.id)
+    await db.delete(device)
+    await db.commit()
+    logger.info("Device deleted", extra={"device_id": str(device_id), "deleted_by": str(current_user.id)})
 
 
 @router.get(

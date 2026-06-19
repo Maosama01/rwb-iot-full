@@ -121,6 +121,8 @@ class Settings(BaseSettings):
     MQTT_BROKER_HOST: str = "mosquitto"
     MQTT_BROKER_PORT: int = 1883
     MQTT_CLIENT_ID: str = "rawbin-backend-listener"
+    MQTT_USERNAME: str = "rawbin"
+    MQTT_PASSWORD: str = "rawbin_mqtt_secret"
 
 
 @lru_cache

@@ -47,6 +47,7 @@ class MQTTIngestionClient:
             mqtt.CallbackAPIVersion.VERSION2,
             client_id=settings.MQTT_CLIENT_ID,
         )
+        self.client.username_pw_set(settings.MQTT_USERNAME, settings.MQTT_PASSWORD)
         self.client.on_connect = self.on_connect
         self.client.on_message = self.on_message
         self._loop: asyncio.AbstractEventLoop | None = None

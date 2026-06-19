@@ -15,7 +15,7 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<any>({ name: 'Demo User', email: 'demo@example.com' });
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchUser = useCallback(async () => {

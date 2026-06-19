@@ -144,6 +144,19 @@ services:
       - mosquitto_data:/mosquitto/data
       - mosquitto_log:/mosquitto/log
 
+  # ─── React Frontend Application ─────────────────────────────────────────────
+  frontend:
+    build:
+      context: ../frontend
+      dockerfile: Dockerfile
+    container_name: rawbin_frontend
+    restart: unless-stopped
+    ports:
+      - "3000:80"
+    depends_on:
+      - api
+
+
 volumes:
   postgres_data:
   redis_data:
