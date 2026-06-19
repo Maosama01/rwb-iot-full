@@ -1,13 +1,30 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { api } from '../api/client';
 import { useAuth } from './AuthContext';
 
-const DeviceContext = createContext(null);
+interface Device {
+  device_id: string;
+  hardware_uid: string;
+  display_name: string;
+  is_paired: boolean;
+  firmware_version: string | null;
+  created_at: string;
+}
 
-export function DeviceProvider({ children }) {
+interface DeviceContextType {
+  devices: Device[];
+  selectedDevice: Device | null;
+  selectDevice: (device: Device) => void;
+  loading: boolean;
+  refetchDevices: () => Promise<void>;
+}
+
+const DeviceContext = createContext<DeviceContextType | null>(null);
+
+export function DeviceProvider({ children }: { children: ReactNode }) {
   const { isAuthenticated } = useAuth();
-  const [devices, setDevices] = useState([]);
-  const [selectedDevice, setSelectedDevice] = useState(null);
+  const [devices, setDevices] = useState<Device[]>([]);
+  const [selectedDevice, setSelectedDevice] = useState<Device | null>(null);
   const [loading, setLoading] = useState(false);
 
   const fetchDevices = useCallback(async () => {
@@ -30,7 +47,7 @@ export function DeviceProvider({ children }) {
     fetchDevices();
   }, [fetchDevices]);
 
-  const selectDevice = (device) => {
+  const selectDevice = (device: Device) => {
     setSelectedDevice(device);
   };
 
@@ -41,7 +58,7 @@ export function DeviceProvider({ children }) {
   );
 }
 
-export function useDevices() {
+export function useDevices(): DeviceContextType {
   const ctx = useContext(DeviceContext);
   if (!ctx) throw new Error('useDevices must be inside DeviceProvider');
   return ctx;

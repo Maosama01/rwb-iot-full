@@ -1,6 +1,7 @@
 import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
 import { DeviceProvider } from './context/DeviceContext';
+import { ToastProvider } from './context/ToastContext';
 import ProtectedRoute from './components/ProtectedRoute';
 import Sidebar from './components/Sidebar';
 import LoginPage from './pages/LoginPage';
@@ -8,12 +9,41 @@ import DashboardPage from './pages/DashboardPage';
 import AlertsPage from './pages/AlertsPage';
 import CompostPage from './pages/CompostPage';
 import DeviceSettingsPage from './pages/DeviceSettingsPage';
+import LandingPage from './pages/LandingPage';
+
+import React, { Component, ErrorInfo } from 'react';
+
+class ErrorBoundary extends Component<{children: React.ReactNode}, {hasError: boolean, error: Error | null}> {
+  constructor(props: any) {
+    super(props);
+    this.state = { hasError: false, error: null };
+  }
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div style={{ padding: 20, color: 'red' }}>
+          <h2>Something went wrong.</h2>
+          <pre style={{ fontSize: '12px', whiteSpace: 'pre-wrap' }}>
+            {this.state.error?.toString()}
+          </pre>
+          <pre style={{ fontSize: '10px', whiteSpace: 'pre-wrap', marginTop: 10 }}>
+            {this.state.error?.stack}
+          </pre>
+        </div>
+      );
+    }
+    return this.props.children;
+  }
+}
 
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="flex min-h-screen bg-background font-sans text-text-primary">
       <Sidebar />
-      <main className="flex-1 ml-64 p-8 overflow-y-auto">
+      <main className="flex-1 min-w-0 md:ml-64 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
         <div className="max-w-7xl mx-auto">
           {children}
         </div>
@@ -24,30 +54,35 @@ function AppLayout({ children }: { children: React.ReactNode }) {
 
 function App() {
   return (
-    <BrowserRouter>
-      <AuthProvider>
-        <Routes>
-          <Route path="/login" element={<LoginPage />} />
-          <Route
-            path="/*"
-            element={
-              <ProtectedRoute>
-                <DeviceProvider>
-                  <AppLayout>
-                    <Routes>
-                      <Route path="/" element={<DashboardPage />} />
-                      <Route path="/alerts" element={<AlertsPage />} />
-                      <Route path="/compost" element={<CompostPage />} />
-                      <Route path="/settings" element={<DeviceSettingsPage />} />
-                    </Routes>
-                  </AppLayout>
-                </DeviceProvider>
-              </ProtectedRoute>
-            }
-          />
-        </Routes>
-      </AuthProvider>
-    </BrowserRouter>
+    <ErrorBoundary>
+      <BrowserRouter>
+        <ToastProvider>
+          <AuthProvider>
+            <Routes>
+              <Route path="/" element={<LandingPage />} />
+              <Route path="/login" element={<LoginPage />} />
+              <Route
+                path="/dashboard/*"
+                element={
+                  <ProtectedRoute>
+                    <DeviceProvider>
+                      <AppLayout>
+                        <Routes>
+                          <Route path="/" element={<DashboardPage />} />
+                          <Route path="/alerts" element={<AlertsPage />} />
+                          <Route path="/compost" element={<CompostPage />} />
+                          <Route path="/settings" element={<DeviceSettingsPage />} />
+                        </Routes>
+                      </AppLayout>
+                    </DeviceProvider>
+                  </ProtectedRoute>
+                }
+              />
+            </Routes>
+          </AuthProvider>
+        </ToastProvider>
+      </BrowserRouter>
+    </ErrorBoundary>
   );
 }
 

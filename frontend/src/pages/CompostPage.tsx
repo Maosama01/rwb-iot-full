@@ -3,14 +3,15 @@ import { Leaf, Plus, Archive, Scale } from 'lucide-react';
 import { api } from '../api/client';
 import { useDevices } from '../context/DeviceContext';
 import { format } from 'date-fns';
+import { useToast } from '../context/ToastContext';
 
 const WASTE_TYPES = ['food_scraps', 'yard_waste', 'paper', 'sawdust', 'manure', 'other'];
 
 export default function CompostPage() {
   const { selectedDevice } = useDevices();
+  const { error } = useToast();
   const [cycles, setCycles] = useState<any[]>([]);
   const [wasteLogs, setWasteLogs] = useState<any[]>([]);
-  const [loading, setLoading] = useState(false);
   const [showNewCycle, setShowNewCycle] = useState(false);
   const [showWasteForm, setShowWasteForm] = useState(false);
   
@@ -19,6 +20,8 @@ export default function CompostPage() {
   const [wasteType, setWasteType] = useState('food_scraps');
   const [wasteWeight, setWasteWeight] = useState('');
   const [wasteNotes, setWasteNotes] = useState('');
+  const [isSubmittingCycle, setIsSubmittingCycle] = useState(false);
+  const [isSubmittingWaste, setIsSubmittingWaste] = useState(false);
 
   useEffect(() => {
     if (!selectedDevice) return;
@@ -26,7 +29,6 @@ export default function CompostPage() {
   }, [selectedDevice]);
 
   const fetchData = async () => {
-    setLoading(true);
     try {
       const [c, w] = await Promise.all([
         api.listCycles(selectedDevice.device_id),
@@ -36,13 +38,12 @@ export default function CompostPage() {
       setWasteLogs(w.items || []);
     } catch (err) {
       console.error('Failed to fetch compost data:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleCreateCycle = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmittingCycle(true);
     try {
       await api.createCycle(selectedDevice.device_id, { label: cycleLabel, notes: cycleNotes });
       setCycleLabel('');
@@ -50,30 +51,39 @@ export default function CompostPage() {
       setShowNewCycle(false);
       fetchData();
     } catch (err: any) {
-      alert(err.message);
+      error(err.message);
+    } finally {
+      setIsSubmittingCycle(false);
     }
   };
 
   const handleCompleteCycle = async (cycleId: string) => {
+    setIsSubmittingCycle(true);
     try {
       await api.updateCycle(cycleId, { status: 'completed' });
       fetchData();
     } catch (err: any) {
-      alert(err.message);
+      error(err.message);
+    } finally {
+      setIsSubmittingCycle(false);
     }
   };
 
   const handleCureCycle = async (cycleId: string) => {
+    setIsSubmittingCycle(true);
     try {
       await api.updateCycle(cycleId, { status: 'curing' });
       fetchData();
     } catch (err: any) {
-      alert(err.message);
+      error(err.message);
+    } finally {
+      setIsSubmittingCycle(false);
     }
   };
 
   const handleAddWaste = async (e: React.FormEvent) => {
     e.preventDefault();
+    setIsSubmittingWaste(true);
     try {
       await api.createWasteLog(selectedDevice.device_id, {
         waste_type: wasteType,
@@ -85,7 +95,9 @@ export default function CompostPage() {
       setShowWasteForm(false);
       fetchData();
     } catch (err: any) {
-      alert(err.message);
+      error(err.message);
+    } finally {
+      setIsSubmittingWaste(false);
     }
   };
 
@@ -140,8 +152,10 @@ export default function CompostPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button type="submit" className="btn btn-primary py-2 px-6">Start Cycle</button>
-                <button type="button" className="btn btn-secondary py-2 px-6 bg-white" onClick={() => setShowNewCycle(false)}>Cancel</button>
+                <button type="submit" disabled={isSubmittingCycle} className="btn btn-primary py-2 px-6">
+                  {isSubmittingCycle ? 'Starting...' : 'Start Cycle'}
+                </button>
+                <button type="button" disabled={isSubmittingCycle} className="btn btn-secondary py-2 px-6 bg-white" onClick={() => setShowNewCycle(false)}>Cancel</button>
               </div>
             </form>
           )}
@@ -158,8 +172,8 @@ export default function CompostPage() {
                   </span>
                 </div>
                 <div className="flex gap-2">
-                  <button className="btn btn-secondary bg-white px-3 py-1.5 text-sm" onClick={() => handleCureCycle(activeCycle.id)}>Move to Curing</button>
-                  <button className="btn btn-primary px-3 py-1.5 text-sm" onClick={() => handleCompleteCycle(activeCycle.id)}>Complete</button>
+                  <button disabled={isSubmittingCycle} className="btn btn-secondary bg-white px-3 py-1.5 text-sm disabled:opacity-50" onClick={() => handleCureCycle(activeCycle.id)}>Move to Curing</button>
+                  <button disabled={isSubmittingCycle} className="btn btn-primary px-3 py-1.5 text-sm disabled:opacity-50" onClick={() => handleCompleteCycle(activeCycle.id)}>Complete</button>
                 </div>
               </div>
               <h3 className="text-xl font-bold text-text-primary mb-1">{activeCycle.label || 'Untitled Batch'}</h3>
@@ -190,7 +204,7 @@ export default function CompostPage() {
                       {c.status.toUpperCase()}
                     </span>
                     {c.status === 'curing' && (
-                      <button className="btn btn-primary px-3 py-1.5 text-xs" onClick={() => handleCompleteCycle(c.id)}>
+                      <button disabled={isSubmittingCycle} className="btn btn-primary px-3 py-1.5 text-xs disabled:opacity-50" onClick={() => handleCompleteCycle(c.id)}>
                         Mark Complete
                       </button>
                     )}
@@ -233,8 +247,10 @@ export default function CompostPage() {
                 </div>
               </div>
               <div className="flex items-center gap-3">
-                <button type="submit" className="btn btn-primary py-2 px-6">Add Log</button>
-                <button type="button" className="btn btn-secondary py-2 px-6 bg-white" onClick={() => setShowWasteForm(false)}>Cancel</button>
+                <button type="submit" disabled={isSubmittingWaste} className="btn btn-primary py-2 px-6">
+                  {isSubmittingWaste ? 'Adding...' : 'Add Log'}
+                </button>
+                <button type="button" disabled={isSubmittingWaste} className="btn btn-secondary py-2 px-6 bg-white" onClick={() => setShowWasteForm(false)}>Cancel</button>
               </div>
             </form>
           )}

@@ -10,7 +10,7 @@ export default function PairingModal({ isOpen, onClose, onComplete }: any) {
       return;
     }
 
-    let timer: NodeJS.Timeout;
+    let timer: ReturnType<typeof setTimeout>;
     if (step === 0) {
       // Step 0: Searching
       timer = setTimeout(() => setStep(1), 2000);

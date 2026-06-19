@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { NavLink, useNavigate } from 'react-router-dom';
 import { 
   LayoutDashboard, 
@@ -9,10 +9,12 @@ import {
   Leaf
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import ConfirmModal from './ConfirmModal';
 
 const Sidebar: React.FC = () => {
   const { logout } = useAuth();
   const navigate = useNavigate();
+  const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
   const handleLogout = () => {
     logout();
@@ -20,49 +22,59 @@ const Sidebar: React.FC = () => {
   };
 
   const navItems = [
-    { name: 'Dashboard', icon: LayoutDashboard, path: '/' },
-    { name: 'Analytics', icon: Activity, path: '/compost' },
-    { name: 'Alerts', icon: BellRing, path: '/alerts' },
-    { name: 'Settings', icon: Settings, path: '/settings' },
+    { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', end: true },
+    { name: 'Analytics', icon: Activity, path: '/dashboard/compost', end: false },
+    { name: 'Alerts', icon: BellRing, path: '/dashboard/alerts', end: false },
+    { name: 'Settings', icon: Settings, path: '/dashboard/settings', end: false },
   ];
 
   return (
-    <aside className="fixed left-0 top-0 h-screen w-64 bg-surface border-r border-border flex flex-col shadow-organic-sm z-50">
-      <div className="p-8 flex items-center gap-3">
+    <aside className="fixed bottom-0 md:top-0 left-0 w-full md:h-screen md:w-64 bg-surface border-t md:border-r md:border-t-0 border-border flex flex-row md:flex-col shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] md:shadow-organic-sm z-50">
+      <div className="hidden md:flex p-8 items-center gap-3">
         <div className="bg-emerald/10 p-2 rounded-xl text-emerald">
           <Leaf size={24} strokeWidth={2.5} />
         </div>
         <span className="text-2xl font-bold text-text-primary tracking-tight">Rawbin</span>
       </div>
 
-      <nav className="flex-1 px-4 flex flex-col gap-2 mt-4">
+      <nav className="flex-1 px-2 md:px-4 py-3 md:py-0 flex flex-row md:flex-col justify-around md:justify-start gap-1 md:gap-2 md:mt-4">
         {navItems.map((item) => (
           <NavLink
             key={item.path}
             to={item.path}
+            end={item.end}
             className={({ isActive }) =>
-              `flex items-center gap-3 px-4 py-3 rounded-2xl font-medium transition-all duration-200 ${
+              `flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 rounded-2xl font-medium transition-all duration-200 ${
                 isActive
-                  ? 'bg-emerald text-white shadow-organic-sm'
+                  ? 'bg-emerald/10 md:bg-emerald text-emerald md:text-white shadow-none md:shadow-organic-sm'
                   : 'text-text-secondary hover:bg-background hover:text-emerald'
               }`
             }
           >
             <item.icon size={20} />
-            {item.name}
+            <span className="text-[10px] md:text-base md:inline">{item.name}</span>
           </NavLink>
         ))}
       </nav>
 
-      <div className="p-4 border-t border-border">
+      <div className="p-2 md:p-4 md:border-t border-border flex justify-center md:justify-start">
         <button
-          onClick={handleLogout}
-          className="flex w-full items-center gap-3 px-4 py-3 text-text-muted hover:text-alert hover:bg-alert-bg rounded-2xl transition-colors font-medium"
+          onClick={() => setShowSignOutConfirm(true)}
+          className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 text-text-muted hover:text-alert hover:bg-alert-bg rounded-2xl transition-colors font-medium w-full"
         >
           <LogOut size={20} />
-          Sign Out
+          <span className="text-[10px] md:text-base md:inline">Sign Out</span>
         </button>
       </div>
+
+      <ConfirmModal
+        isOpen={showSignOutConfirm}
+        onClose={() => setShowSignOutConfirm(false)}
+        onConfirm={handleLogout}
+        title="Sign Out"
+        message="Are you sure you want to sign out of Rawbin?"
+        confirmText="Sign Out"
+      />
     </aside>
   );
 };

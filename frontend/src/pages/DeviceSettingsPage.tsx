@@ -2,15 +2,16 @@ import { useState, useEffect } from 'react';
 import { Settings, Save, UserPlus, Trash2, Shield, AlertTriangle } from 'lucide-react';
 import { api } from '../api/client';
 import { useDevices } from '../context/DeviceContext';
+import ConfirmModal from '../components/ConfirmModal';
+import { useToast } from '../context/ToastContext';
 
 export default function DeviceSettingsPage() {
   const { selectedDevice } = useDevices();
-  const [config, setConfig] = useState<any>(null);
+  const { error, success } = useToast();
   const [members, setMembers] = useState<any[]>([]);
   const [shareEmail, setShareEmail] = useState('');
   const [saving, setSaving] = useState(false);
-  const [saveMsg, setSaveMsg] = useState('');
-  const [loading, setLoading] = useState(false);
+  const [confirmRemoveId, setConfirmRemoveId] = useState<string | null>(null);
 
   // Threshold form state
   const [tempMax, setTempMax] = useState('');
@@ -27,13 +28,11 @@ export default function DeviceSettingsPage() {
   }, [selectedDevice]);
 
   const fetchSettings = async () => {
-    setLoading(true);
     try {
       const [cfg, mem] = await Promise.all([
         api.getDeviceConfig(selectedDevice.device_id),
         api.listMembers(selectedDevice.device_id),
       ]);
-      setConfig(cfg);
       setMembers(mem);
       setTempMax(cfg.temperature_c_max ?? '');
       setTempMin(cfg.temperature_c_min ?? '');
@@ -44,15 +43,12 @@ export default function DeviceSettingsPage() {
       setPhMax(cfg.ph_max ?? '');
     } catch (err) {
       console.error('Failed to fetch settings:', err);
-    } finally {
-      setLoading(false);
     }
   };
 
   const handleSaveConfig = async (e: React.FormEvent) => {
     e.preventDefault();
     setSaving(true);
-    setSaveMsg('');
     try {
       await api.updateDeviceConfig(selectedDevice.device_id, {
         temperature_c_max: parseFloat(tempMax) || null,
@@ -63,32 +59,43 @@ export default function DeviceSettingsPage() {
         ph_min: parseFloat(phMin) || null,
         ph_max: parseFloat(phMax) || null,
       });
-      setSaveMsg('Thresholds saved!');
-      setTimeout(() => setSaveMsg(''), 3000);
+      success('Thresholds saved successfully!');
     } catch (err: any) {
-      setSaveMsg(`Error: ${err.message}`);
+      error(`Error: ${err.message}`);
     } finally {
       setSaving(false);
     }
   };
 
+  const [sharing, setSharing] = useState(false);
+
   const handleShare = async () => {
     if (!shareEmail) return;
+    setSharing(true);
     try {
       const updated = await api.shareDevice(selectedDevice.device_id, shareEmail);
       setMembers(updated);
       setShareEmail('');
+      success('Device shared successfully!');
     } catch (err: any) {
-      alert(err.message);
+      error(err.message);
+    } finally {
+      setSharing(false);
     }
   };
 
+  const [removingId, setRemovingId] = useState<string | null>(null);
+
   const handleRemoveMember = async (userId: string) => {
+    setRemovingId(userId);
     try {
       await api.removeMember(selectedDevice.device_id, userId);
       setMembers(members.filter((m) => m.user_id !== userId));
+      success('Member removed successfully.');
     } catch (err: any) {
-      alert(err.message);
+      error(err.message);
+    } finally {
+      setRemovingId(null);
     }
   };
 
@@ -173,7 +180,6 @@ export default function DeviceSettingsPage() {
                 <Save size={18} />
                 {saving ? 'Saving…' : 'Save Thresholds'}
               </button>
-              {saveMsg && <span className={`text-sm font-medium ${saveMsg.includes('Error') ? 'text-alert' : 'text-emerald-dark'}`}>{saveMsg}</span>}
             </div>
           </form>
         </div>
@@ -193,8 +199,8 @@ export default function DeviceSettingsPage() {
                 value={shareEmail}
                 onChange={(e) => setShareEmail(e.target.value)}
               />
-              <button className="btn btn-primary py-2 px-4 text-sm" onClick={handleShare}>
-                <UserPlus size={16} /> Share
+              <button className="btn btn-primary py-2 px-4 text-sm disabled:opacity-50" onClick={handleShare} disabled={sharing}>
+                <UserPlus size={16} /> {sharing ? 'Sharing...' : 'Share'}
               </button>
             </div>
 
@@ -213,9 +219,10 @@ export default function DeviceSettingsPage() {
                   </div>
                   {members.length > 1 && (
                     <button
-                      className="p-2 text-text-muted hover:text-alert hover:bg-alert/10 rounded-xl transition-colors"
-                      onClick={() => handleRemoveMember(m.user_id)}
+                      className="p-2 text-text-muted hover:text-alert hover:bg-alert/10 rounded-xl transition-colors disabled:opacity-50"
+                      onClick={() => setConfirmRemoveId(m.user_id)}
                       title={`Remove ${m.display_name}`}
+                      disabled={removingId === m.user_id}
                     >
                       <Trash2 size={16} />
                     </button>
@@ -226,6 +233,17 @@ export default function DeviceSettingsPage() {
           </div>
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={!!confirmRemoveId}
+        onClose={() => setConfirmRemoveId(null)}
+        onConfirm={() => {
+          if (confirmRemoveId) handleRemoveMember(confirmRemoveId);
+        }}
+        title="Remove Member"
+        message="Are you sure you want to revoke this user's access to the device?"
+        confirmText="Remove Access"
+      />
     </div>
   );
 }

@@ -35,18 +35,18 @@ export default function LoginPage() {
           display_name: displayName, 
           phone: phone || undefined 
         });
-        navigate('/');
+        navigate('/dashboard');
       } else {
         if (loginMethod === 'email') {
           await login(email, password);
-          navigate('/');
+          navigate('/dashboard');
         } else {
           if (!otpSent) {
             await requestOtp(phone);
             setOtpSent(true);
           } else {
             await verifyOtp(phone, otpCode);
-            navigate('/');
+            navigate('/dashboard');
           }
         }
       }
@@ -78,153 +78,157 @@ export default function LoginPage() {
           <div className="flex bg-background p-1 rounded-2xl mb-8 border border-border">
             <button 
               type="button"
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${loginMethod === 'email' ? 'bg-white shadow-organic-sm text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 ${loginMethod === 'email' ? 'bg-white shadow-organic-sm text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
               onClick={() => { setLoginMethod('email'); setError(''); setOtpSent(false); }}
+              disabled={loading}
             >
               Email
             </button>
             <button 
               type="button"
-              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all ${loginMethod === 'phone' ? 'bg-white shadow-organic-sm text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
+              className={`flex-1 py-2.5 rounded-xl text-sm font-semibold transition-all disabled:opacity-50 ${loginMethod === 'phone' ? 'bg-white shadow-organic-sm text-text-primary' : 'text-text-secondary hover:text-text-primary'}`}
               onClick={() => { setLoginMethod('phone'); setError(''); }}
+              disabled={loading}
             >
               Phone
             </button>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="flex flex-col gap-5">
-          {isRegister && (
-            <div className="flex flex-col gap-1.5">
-              <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">Full Name</label>
-              <div className="relative">
-                <User size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
-                <input
-                  type="text"
-                  className="input-field pl-12 py-3.5"
-                  placeholder="Jane Doe"
-                  value={displayName}
-                  onChange={(e) => setDisplayName(e.target.value)}
-                  required
-                />
-              </div>
-            </div>
-          )}
-
-          {(!isRegister && loginMethod === 'phone') ? (
-            <>
+        <form onSubmit={handleSubmit} className="flex flex-col gap-5 w-full">
+          <fieldset disabled={loading} className="flex flex-col gap-5 border-none p-0 m-0 w-full">
+            {isRegister && (
               <div className="flex flex-col gap-1.5">
-                <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">Phone Number</label>
+                <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">Full Name</label>
                 <div className="relative">
-                  <Phone size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+                  <User size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
                   <input
-                    type="tel"
+                    type="text"
                     className="input-field pl-12 py-3.5"
-                    placeholder="+1234567890"
-                    pattern="^\+[1-9]\d{1,14}$"
-                    title="Must include country code, e.g. +1 or +91"
-                    value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
-                    required
-                    disabled={otpSent}
-                  />
-                </div>
-              </div>
-
-              {otpSent && (
-                <div className="flex flex-col gap-1.5 animate-fade-in-up mt-2">
-                  <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">6-Digit Code</label>
-                  <div className="relative">
-                    <KeyRound size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
-                    <input
-                      type="text"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      maxLength={6}
-                      className="input-field pl-12 py-3.5 text-center tracking-[0.5em] font-bold text-lg"
-                      placeholder="••••••"
-                      value={otpCode}
-                      onChange={(e) => setOtpCode(e.target.value)}
-                      required
-                    />
-                  </div>
-                  <button 
-                    type="button" 
-                    className="text-emerald text-sm font-medium mt-2 hover:underline self-start"
-                    onClick={() => { setOtpSent(false); setOtpCode(''); setError(''); }}
-                  >
-                    Change phone number
-                  </button>
-                </div>
-              )}
-            </>
-          ) : (
-            <>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">Email</label>
-                <div className="relative">
-                  <Mail size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input
-                    type="email"
-                    className="input-field pl-12 py-3.5"
-                    placeholder="you@example.com"
-                    value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="Jane Doe"
+                    value={displayName}
+                    onChange={(e) => setDisplayName(e.target.value)}
                     required
                   />
                 </div>
               </div>
+            )}
 
-              {isRegister && (
+            {(!isRegister && loginMethod === 'phone') ? (
+              <>
                 <div className="flex flex-col gap-1.5">
-                  <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">Phone Number (Optional)</label>
+                  <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">Phone Number</label>
                   <div className="relative">
                     <Phone size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
                     <input
                       type="tel"
-                      className="input-field pl-12 py-3.5"
+                      className="input-field pl-12 py-3.5 disabled:opacity-50"
                       placeholder="+1234567890"
                       pattern="^\+[1-9]\d{1,14}$"
                       title="Must include country code, e.g. +1 or +91"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
+                      required
+                      disabled={otpSent}
                     />
                   </div>
                 </div>
-              )}
 
-              <div className="flex flex-col gap-1.5">
-                <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">Password</label>
-                <div className="relative">
-                  <Lock size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
-                  <input
-                    type="password"
-                    className="input-field pl-12 py-3.5"
-                    placeholder="••••••••"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    minLength={8}
-                  />
+                {otpSent && (
+                  <div className="flex flex-col gap-1.5 animate-fade-in-up mt-2">
+                    <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">6-Digit Code</label>
+                    <div className="relative">
+                      <KeyRound size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+                      <input
+                        type="text"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        maxLength={6}
+                        className="input-field pl-12 py-3.5 text-center tracking-[0.5em] font-bold text-lg"
+                        placeholder="••••••"
+                        value={otpCode}
+                        onChange={(e) => setOtpCode(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <button 
+                      type="button" 
+                      className="text-emerald text-sm font-medium mt-2 hover:underline self-start disabled:opacity-50 disabled:hover:no-underline"
+                      onClick={() => { setOtpSent(false); setOtpCode(''); setError(''); }}
+                    >
+                      Change phone number
+                    </button>
+                  </div>
+                )}
+              </>
+            ) : (
+              <>
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">Email</label>
+                  <div className="relative">
+                    <Mail size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+                    <input
+                      type="email"
+                      className="input-field pl-12 py-3.5"
+                      placeholder="you@example.com"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      required
+                    />
+                  </div>
                 </div>
-              </div>
-            </>
-          )}
 
-          {error && <div className="p-4 rounded-xl bg-alert/10 text-alert-dark text-sm font-medium border border-alert/20">{error}</div>}
+                {isRegister && (
+                  <div className="flex flex-col gap-1.5">
+                    <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">Phone Number (Optional)</label>
+                    <div className="relative">
+                      <Phone size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+                      <input
+                        type="tel"
+                        className="input-field pl-12 py-3.5"
+                        placeholder="+1234567890"
+                        pattern="^\+[1-9]\d{1,14}$"
+                        title="Must include country code, e.g. +1 or +91"
+                        value={phone}
+                        onChange={(e) => setPhone(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                )}
 
-          <button
-            type="submit"
-            className="btn btn-primary w-full py-4 text-base font-bold mt-2 flex justify-center items-center gap-2 group"
-            disabled={loading}
-          >
-            {loading ? 'Processing…' : (
-              isRegister ? 'Create Account' : (
-                loginMethod === 'phone' && !otpSent ? 'Send Login Code' : 'Sign In to Dashboard'
-              )
+                <div className="flex flex-col gap-1.5">
+                  <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">Password</label>
+                  <div className="relative">
+                    <Lock size={20} className="absolute left-4 top-1/2 -translate-y-1/2 text-text-muted" />
+                    <input
+                      type="password"
+                      className="input-field pl-12 py-3.5"
+                      placeholder="••••••••"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      minLength={8}
+                    />
+                  </div>
+                </div>
+              </>
             )}
-            {!loading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
-          </button>
+
+            {error && <div className="p-4 rounded-xl bg-alert/10 text-alert-dark text-sm font-medium border border-alert/20">{error}</div>}
+
+            <button
+              type="submit"
+              className="btn btn-primary w-full py-4 text-base font-bold mt-2 flex justify-center items-center gap-2 group disabled:opacity-70 disabled:cursor-not-allowed"
+              disabled={loading}
+            >
+              {loading ? 'Processing…' : (
+                isRegister ? 'Create Account' : (
+                  loginMethod === 'phone' && !otpSent ? 'Send Login Code' : 'Sign In to Dashboard'
+                )
+              )}
+              {!loading && <ArrowRight size={20} className="group-hover:translate-x-1 transition-transform" />}
+            </button>
+          </fieldset>
         </form>
 
         <div className="mt-8 text-center">

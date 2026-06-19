@@ -1,10 +1,21 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, ReactNode } from 'react';
 import { api } from '../api/client';
 
-const AuthContext = createContext(null);
+interface AuthContextType {
+  user: any;
+  loading: boolean;
+  login: (email: string, password: string) => Promise<void>;
+  register: (data: any) => Promise<void>;
+  requestOtp: (phone: string) => Promise<any>;
+  verifyOtp: (phone: string, code: string) => Promise<void>;
+  logout: () => Promise<void>;
+  isAuthenticated: boolean;
+}
 
-export function AuthProvider({ children }) {
-  const [user, setUser] = useState(null);
+const AuthContext = createContext<AuthContextType | null>(null);
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<any>(null);
   const [loading, setLoading] = useState(true);
 
   const fetchUser = useCallback(async () => {
@@ -28,23 +39,23 @@ export function AuthProvider({ children }) {
     fetchUser();
   }, [fetchUser]);
 
-  const login = async (email, password) => {
+  const login = async (email: string, password: string) => {
     const tokens = await api.login(email, password);
     api.setTokens(tokens);
     await fetchUser();
   };
 
-  const register = async (data) => {
+  const register = async (data: any) => {
     const result = await api.register(data);
     api.setTokens(result.tokens);
     setUser(result.user);
   };
 
-  const requestOtp = async (phone) => {
+  const requestOtp = async (phone: string) => {
     return api.requestOtp(phone);
   };
 
-  const verifyOtp = async (phone, code) => {
+  const verifyOtp = async (phone: string, code: string) => {
     await api.verifyOtp(phone, code);
     await fetchUser();
   };
@@ -61,7 +72,7 @@ export function AuthProvider({ children }) {
   );
 }
 
-export function useAuth() {
+export function useAuth(): AuthContextType {
   const ctx = useContext(AuthContext);
   if (!ctx) throw new Error('useAuth must be inside AuthProvider');
   return ctx;
