@@ -31,6 +31,12 @@ class Settings(BaseSettings):
     def allowed_origins_list(self) -> List[str]:
         """Return ALLOWED_ORIGINS as a list (supports comma-separated or JSON-array)."""
         if not self.ALLOWED_ORIGINS:
+            if self.APP_ENV == "development":
+                return [
+                    "http://localhost:3000",
+                    "http://localhost:5173",
+                    "http://localhost:8080",
+                ]
             return []
         raw = self.ALLOWED_ORIGINS.strip()
         if raw.startswith("["):
