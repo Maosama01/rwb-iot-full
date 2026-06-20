@@ -14,8 +14,11 @@ and avoid a second, divergent write path.
 import logging
 import uuid
 from datetime import datetime, timedelta, timezone
+import csv
+import io
 
 from fastapi import APIRouter, HTTPException, Query, status
+from fastapi.responses import StreamingResponse
 from sqlalchemy import select, text
 
 from app.api.deps import CurrentUser, DbSession
@@ -177,4 +180,121 @@ async def get_telemetry_history(
         to=window_end,
         count=len(readings),
         readings=readings,
+    )
+
+@router.get(
+    "/{device_id}/latest",
+    response_model=TelemetryRawPoint,
+    summary="Get the most recent sensor reading",
+)
+async def get_latest_telemetry(
+    device_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> TelemetryRawPoint:
+    """
+    Returns the single most recent raw sensor reading for the device.
+    """
+    await device_access.assert_device_member(db, device_id, current_user.id)
+
+    result = await db.execute(
+        select(SensorReading)
+        .where(SensorReading.device_id == device_id)
+        .order_by(SensorReading.time.desc())
+        .limit(1)
+    )
+    r = result.scalars().first()
+    
+    if not r:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="No telemetry data found for this device.",
+        )
+        
+    return TelemetryRawPoint(
+        time=r.time,
+        temperature_c=r.temperature_c,
+        humidity_pct=r.humidity_pct,
+        co2_ppm=r.co2_ppm,
+        ph_level=r.ph_level,
+        ambient_temp_c=r.ambient_temp_c,
+        fan_speed_rpm=r.fan_speed_rpm,
+        fill_level_pct=r.fill_level_pct,
+        weight_kg=r.weight_kg,
+        firmware_version=r.firmware_version,
+    )
+
+@router.get(
+    "/{device_id}/export",
+    summary="Export historical sensor readings to CSV",
+)
+async def export_telemetry_csv(
+    device_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+    interval: str = Query(
+        default="hour",
+        description="Time resolution (raw|hour|day)",
+        pattern="^(raw|hour|day)$",
+    ),
+    from_: datetime | None = Query(default=None, alias="from"),
+    to: datetime | None = Query(default=None),
+):
+    """
+    Export telemetry data as a CSV file.
+    Uses the same underlying query logic as /history.
+    """
+    history = await get_telemetry_history(
+        device_id=device_id,
+        current_user=current_user,
+        db=db,
+        interval=interval,
+        from_=from_,
+        to=to,
+    )
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+
+    if interval == "raw":
+        writer.writerow([
+            "time", "temperature_c", "humidity_pct", "co2_ppm", 
+            "ph_level", "ambient_temp_c", "fan_speed_rpm", 
+            "fill_level_pct", "weight_kg", "firmware_version"
+        ])
+        for r in history.readings:
+            writer.writerow([
+                r.time.isoformat() if r.time else "",
+                r.temperature_c,
+                r.humidity_pct,
+                r.co2_ppm,
+                r.ph_level,
+                r.ambient_temp_c,
+                r.fan_speed_rpm,
+                r.fill_level_pct,
+                r.weight_kg,
+                r.firmware_version,
+            ])
+    else:
+        writer.writerow([
+            "bucket", "temperature_c_avg", "temperature_c_min", "temperature_c_max",
+            "humidity_pct_avg", "co2_ppm_avg", "ph_level_avg", "fan_speed_rpm_avg"
+        ])
+        for r in history.readings:
+            writer.writerow([
+                r.bucket.isoformat() if r.bucket else "",
+                r.temperature_c_avg,
+                r.temperature_c_min,
+                r.temperature_c_max,
+                r.humidity_pct_avg,
+                r.co2_ppm_avg,
+                r.ph_level_avg,
+                r.fan_speed_rpm_avg,
+            ])
+
+    output.seek(0)
+    return StreamingResponse(
+        iter([output.getvalue()]),
+        media_type="text/csv",
+        headers={"Content-Disposition": f"attachment; filename=telemetry_{device_id}_{interval}.csv"}
     )

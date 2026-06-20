@@ -8,10 +8,15 @@ import {
   Leaf, 
   ArrowRight,
   ShieldCheck,
-  Smartphone
+  Smartphone,
+  Moon,
+  Sun
 } from 'lucide-react';
+import { useTheme } from '../context/ThemeContext';
 
 const LandingPage: React.FC = () => {
+  const { theme, toggleTheme } = useTheme();
+
   return (
     <div className="min-h-screen bg-background font-sans text-text-primary selection:bg-emerald/20 selection:text-emerald-dark">
       {/* Navigation */}
@@ -23,16 +28,23 @@ const LandingPage: React.FC = () => {
             </div>
             <span className="text-2xl font-bold tracking-tight">Rawbin</span>
           </Link>
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-2 sm:gap-4">
+            <button
+              onClick={toggleTheme}
+              className="p-2.5 text-text-secondary hover:bg-border/50 hover:text-emerald rounded-full transition-colors"
+              aria-label="Toggle theme"
+            >
+              {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+            </button>
             <Link 
               to="/login"
-              className="px-5 py-2.5 text-text-secondary hover:text-emerald font-medium transition-colors"
+              className="px-4 py-2.5 text-text-secondary hover:text-emerald font-medium transition-colors hidden sm:block"
             >
               Log in
             </Link>
             <Link 
               to="/login"
-              className="bg-emerald hover:bg-emerald-dark text-white px-6 py-2.5 rounded-2xl font-medium shadow-organic transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
+              className="bg-emerald hover:bg-emerald-dark text-white px-5 sm:px-6 py-2.5 rounded-2xl font-medium shadow-organic transition-all hover:scale-105 active:scale-95 flex items-center gap-2"
             >
               Get Started
             </Link>
@@ -79,39 +91,53 @@ const LandingPage: React.FC = () => {
 
           <div className="flex-1 relative w-full flex justify-center">
             {/* Soft UI Hardware Mockup */}
-            <div className="relative w-full max-w-lg aspect-auto sm:aspect-square bg-surface rounded-[3rem] shadow-organic border border-white p-6 sm:p-8 flex flex-col justify-between">
-              <div className="flex justify-between items-start">
+            <div className="relative w-full max-w-lg aspect-auto sm:aspect-square bg-gradient-to-b from-surface to-background rounded-[3rem] shadow-organic-lg border border-border p-6 sm:p-8 flex flex-col justify-between overflow-hidden group">
+              {/* Decorative top glow */}
+              <div className="absolute top-0 left-1/2 -translate-x-1/2 w-3/4 h-32 bg-emerald/20 blur-[50px] rounded-full opacity-50 group-hover:opacity-80 transition-opacity duration-700"></div>
+              
+              <div className="flex justify-between items-start relative z-10">
                 <div>
-                  <h3 className="text-2xl font-bold">Kitchen Bin</h3>
-                  <div className="flex items-center gap-2 text-emerald mt-1">
-                    <Activity size={16} aria-hidden="true" />
-                    <span className="text-sm font-medium">Active Cycle</span>
+                  <h3 className="text-3xl font-black text-text-primary tracking-tight">Kitchen Bin</h3>
+                  <div className="flex items-center gap-2 text-emerald mt-2 bg-emerald/10 w-fit px-3 py-1 rounded-full">
+                    <div className="w-2 h-2 rounded-full bg-emerald animate-pulse"></div>
+                    <span className="text-sm font-bold uppercase tracking-wider">Active Cycle</span>
                   </div>
                 </div>
-                <div className="w-16 h-16 rounded-full bg-emerald/10 flex items-center justify-center text-emerald">
-                  <ShieldCheck size={32} aria-hidden="true" />
+                <div className="w-14 h-14 rounded-2xl bg-emerald text-white flex items-center justify-center shadow-[0_8px_16px_-4px_rgba(16,185,129,0.4)]">
+                  <ShieldCheck size={28} aria-hidden="true" />
                 </div>
               </div>
               
-              <div className="grid grid-cols-2 gap-4 mt-8">
-                <div className="bg-background rounded-3xl p-6 border border-border/50">
-                  <div className="text-text-muted text-sm font-medium mb-1">Temperature</div>
-                  <div className="text-3xl font-bold text-text-primary">62.5°C</div>
-                  <div className="text-xs text-emerald font-medium mt-2">Optimal</div>
+              <div className="grid grid-cols-2 gap-4 mt-8 relative z-10">
+                <div className="bg-surface rounded-3xl p-6 border border-border shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-text-muted text-sm font-bold uppercase tracking-wider">Temperature</div>
+                  </div>
+                  <div className="text-4xl font-black text-text-primary mb-1">62.5<span className="text-2xl text-text-muted">°C</span></div>
+                  <div className="text-sm font-medium text-emerald flex items-center gap-1">
+                    <Activity size={14} /> Optimal Range
+                  </div>
                 </div>
-                <div className="bg-background rounded-3xl p-6 border border-border/50">
-                  <div className="text-text-muted text-sm font-medium mb-1">Humidity</div>
-                  <div className="text-3xl font-bold text-text-primary">55%</div>
-                  <div className="text-xs text-emerald font-medium mt-2">Perfect</div>
+                <div className="bg-surface rounded-3xl p-6 border border-border shadow-sm hover:shadow-md transition-shadow">
+                  <div className="flex items-center justify-between mb-2">
+                    <div className="text-text-muted text-sm font-bold uppercase tracking-wider">Humidity</div>
+                  </div>
+                  <div className="text-4xl font-black text-text-primary mb-1">55<span className="text-2xl text-text-muted">%</span></div>
+                  <div className="text-sm font-medium text-emerald flex items-center gap-1">
+                    <Activity size={14} /> Perfect Mix
+                  </div>
                 </div>
               </div>
-              <div className="w-full bg-background h-24 rounded-3xl mt-4 border border-border/50 p-4 flex items-end gap-2 overflow-hidden">
-                <div className="w-1/6 bg-emerald/20 h-[30%] rounded-t-lg"></div>
-                <div className="w-1/6 bg-emerald/30 h-[45%] rounded-t-lg"></div>
-                <div className="w-1/6 bg-emerald/50 h-[60%] rounded-t-lg"></div>
-                <div className="w-1/6 bg-emerald/70 h-[80%] rounded-t-lg"></div>
-                <div className="w-1/6 bg-emerald h-full rounded-t-lg"></div>
-                <div className="w-1/6 bg-emerald h-[90%] rounded-t-lg"></div>
+              
+              <div className="w-full bg-surface h-32 rounded-3xl mt-6 border border-border p-5 flex items-end gap-3 relative z-10 shadow-inner">
+                <div className="flex-1 bg-emerald opacity-20 h-[30%] rounded-t-xl hover:opacity-40 transition-opacity cursor-pointer"></div>
+                <div className="flex-1 bg-emerald opacity-30 h-[45%] rounded-t-xl hover:opacity-50 transition-opacity cursor-pointer"></div>
+                <div className="flex-1 bg-emerald opacity-50 h-[60%] rounded-t-xl hover:opacity-70 transition-opacity cursor-pointer"></div>
+                <div className="flex-1 bg-emerald opacity-70 h-[80%] rounded-t-xl hover:opacity-90 transition-opacity cursor-pointer"></div>
+                <div className="flex-1 bg-emerald opacity-90 h-[95%] rounded-t-xl hover:opacity-100 transition-opacity cursor-pointer relative group">
+                  <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-text-primary text-surface text-xs font-bold py-1 px-2 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Peak Heat</div>
+                </div>
+                <div className="flex-1 bg-emerald h-full rounded-t-xl hover:opacity-80 transition-opacity cursor-pointer"></div>
               </div>
             </div>
           </div>

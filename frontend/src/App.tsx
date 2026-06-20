@@ -9,6 +9,7 @@ import DashboardPage from './pages/DashboardPage';
 import AlertsPage from './pages/AlertsPage';
 import CompostPage from './pages/CompostPage';
 import DeviceSettingsPage from './pages/DeviceSettingsPage';
+import AnalyticsPage from './pages/AnalyticsPage';
 import LandingPage from './pages/LandingPage';
 
 import React, { Component, ErrorInfo } from 'react';
@@ -52,11 +53,14 @@ function AppLayout({ children }: { children: React.ReactNode }) {
   );
 }
 
+import { ThemeProvider } from './context/ThemeContext';
+
 function App() {
   return (
     <ErrorBoundary>
-      <BrowserRouter>
-        <ToastProvider>
+      <ThemeProvider>
+        <BrowserRouter>
+          <ToastProvider>
           <AuthProvider>
             <Routes>
               <Route path="/" element={<LandingPage />} />
@@ -71,7 +75,8 @@ function App() {
                           <Route path="/" element={<DashboardPage />} />
                           <Route path="/alerts" element={<AlertsPage />} />
                           <Route path="/compost" element={<CompostPage />} />
-                          <Route path="/settings" element={<DeviceSettingsPage />} />
+                          <Route path="/device-settings" element={<DeviceSettingsPage />} />
+                          <Route path="/analytics" element={<AnalyticsPage />} />
                         </Routes>
                       </AppLayout>
                     </DeviceProvider>
@@ -81,7 +86,8 @@ function App() {
             </Routes>
           </AuthProvider>
         </ToastProvider>
-      </BrowserRouter>
+        </BrowserRouter>
+      </ThemeProvider>
     </ErrorBoundary>
   );
 }

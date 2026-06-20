@@ -1,3 +1,4 @@
+import React from 'react';
 import { ResponsiveContainer, AreaChart, Area, XAxis, YAxis, Tooltip, CartesianGrid } from 'recharts';
 import { format } from 'date-fns';
 
@@ -25,7 +26,7 @@ function CustomTooltip({ active, payload, label, formatLabel }: any) {
   );
 }
 
-export default function TelemetryChart({ data = [], interval = 'hour', metrics = ['temperature', 'humidity'], height = 320 }: any) {
+const TelemetryChart = ({ data = [], interval = 'hour', metrics = ['temperature', 'humidity'], height = 320 }: any) => {
   if (!data.length) {
     return (
       <div className="flex items-center justify-center h-full text-text-muted border-2 border-dashed border-border rounded-2xl bg-background/50">
@@ -124,4 +125,6 @@ export default function TelemetryChart({ data = [], interval = 'hour', metrics =
       </ResponsiveContainer>
     </div>
   );
-}
+};
+
+export default React.memo(TelemetryChart);

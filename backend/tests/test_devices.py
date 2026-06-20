@@ -93,8 +93,9 @@ class TestPairingChallenge:
             "/api/v1/auth/register",
             json={
                 "email": "userb@rawbin.io",
-                "password": "UserBPass123!",
+                "password": "SharePass123!",
                 "display_name": "User B",
+                "phone": "+14155550004",
             },
         )
         token_b = reg_b.json()["tokens"]["access_token"]
@@ -267,8 +268,9 @@ class TestListDevices:
             "/api/v1/auth/register",
             json={
                 "email": "empty@rawbin.io",
-                "password": "EmptyPass123!",
+                "password": "Pass123!",
                 "display_name": "Empty",
+                "phone": "+14155550005",
             },
         )
         token = reg.json()["tokens"]["access_token"]
@@ -300,8 +302,9 @@ class TestListDevices:
             "/api/v1/auth/register",
             json={
                 "email": "userb2@rawbin.io",
-                "password": "UserB2Pass123!",
+                "password": "SharePass123!",
                 "display_name": "User B2",
+                "phone": "+14155550006",
             },
         )
         token_b = reg_b.json()["tokens"]["access_token"]

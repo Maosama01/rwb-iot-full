@@ -28,7 +28,7 @@ async def test_get_me_returns_profile(async_client: AsyncClient, auth_headers: d
 @pytest.mark.asyncio
 async def test_get_me_unauthenticated(async_client: AsyncClient):
     r = await async_client.get("/api/v1/users/me")
-    assert r.status_code == 403   # no Bearer → HTTPBearer raises 403
+    assert r.status_code == 401   # no Bearer → HTTPBearer raises 401
 
 
 # ── PATCH /users/me ───────────────────────────────────────────────────────────
@@ -120,4 +120,4 @@ async def test_push_token_requires_auth(async_client: AsyncClient):
         "/api/v1/users/me/push-token",
         json={"token": "fcm-token-abc123xyz"},
     )
-    assert r.status_code == 403
+    assert r.status_code == 401

@@ -36,10 +36,10 @@ class UserRegisterRequest(BaseModel):
         max_length=100,
         examples=["Alice"],
     )
-    phone: Optional[str] = Field(
-        default=None,
+    phone: str = Field(
+        ...,
         pattern=_E164_PATTERN,
-        description="E.164 phone number for SMS-OTP login (optional).",
+        description="E.164 phone number for SMS-OTP login.",
         examples=["+14155552671"],
     )
 
@@ -92,6 +92,16 @@ class RefreshRequest(BaseModel):
         ...,
         description="The opaque refresh token issued at login.",
     )
+
+
+class PushTokenUpdate(BaseModel):
+    """Body for PUT /api/v1/auth/push-token"""
+    token: str = Field(..., description="Firebase Cloud Messaging (FCM) push token")
+
+
+class SocialLoginRequest(BaseModel):
+    """Body for POST /api/v1/auth/social/firebase"""
+    id_token: str = Field(..., description="Firebase ID Token from the client SDK")
 
 
 # ── Response Models ───────────────────────────────────────────────────────────

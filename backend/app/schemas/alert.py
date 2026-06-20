@@ -23,6 +23,8 @@ class AlertEventOut(BaseModel):
     message: str
     reading_time: datetime
     notified: bool
+    acknowledged: bool
+    acknowledged_at: datetime | None = None
     created_at: datetime
 
 

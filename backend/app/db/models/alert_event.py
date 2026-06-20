@@ -66,6 +66,11 @@ class AlertEvent(Base):
         nullable=False,
     )
     notified: Mapped[bool] = mapped_column(default=False, nullable=False)
+    acknowledged: Mapped[bool] = mapped_column(default=False, nullable=False)
+    acknowledged_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True),
+        nullable=True,
+    )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True),
         nullable=False,

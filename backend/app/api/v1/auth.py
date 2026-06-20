@@ -19,7 +19,7 @@ import logging
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import or_, select
 
-from app.api.deps import DbSession, RedisDep
+from app.api.deps import CurrentUser, DbSession, RedisDep
 from app.core.config import get_settings
 from app.core.security import hash_password, verify_password
 from app.db.models.refresh_token import RefreshToken
@@ -27,8 +27,10 @@ from app.db.models.user import User
 from app.schemas.auth import (
     OTPRequestIn,
     OTPVerifyIn,
+    PushTokenUpdate,
     RefreshRequest,
     RegisterResponse,
+    SocialLoginRequest,
     TokenResponse,
     UserLoginRequest,
     UserRegisterRequest,
@@ -125,22 +127,25 @@ async def request_otp(body: OTPRequestIn, db: DbSession, redis: RedisDep) -> dic
     result = await db.execute(select(User).where(User.phone == body.phone))
     user: User | None = result.scalar_one_or_none()
 
-    if user is not None and user.is_active:
-        try:
-            code = await issue_code(redis, body.phone)
-        except OTPCooldownError:
-            # Silently accept — don't reveal timing of prior requests.
-            return {"detail": "If the number is registered, a code has been sent."}
-        try:
-            await send_sms(body.phone, f"Your Rawbin login code is {code}. It expires in 5 minutes.")
-        except SMSDeliveryError:
-            logger.error("Failed to deliver OTP SMS", extra={"phone": body.phone})
-            raise HTTPException(
-                status_code=status.HTTP_502_BAD_GATEWAY,
-                detail="Could not send the SMS code. Please try again.",
-            )
+    if user is None or not user.is_active:
+        # Uniform response to avoid leaking registered numbers
+        return {"detail": "If the number is registered, a code has been sent."}
 
-    return {"detail": "If the number is registered, a code has been sent."}
+    try:
+        code = await issue_code(redis, body.phone)
+    except OTPCooldownError:
+        # Silently accept — don't reveal timing of prior requests.
+        return {"detail": "If the number is registered, a code has been sent."}
+    try:
+        await send_sms(body.phone, f"Your Rawbin login code is {code}. It expires in 5 minutes.")
+    except SMSDeliveryError:
+        logger.error("Failed to deliver OTP SMS", extra={"phone": body.phone})
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Could not send the SMS code. Please try again.",
+        )
+
+    return {"detail": "Code has been sent."}
 
 
 @router.post(
@@ -206,3 +211,80 @@ async def logout(body: RefreshRequest, db: DbSession) -> None:
     rt: RefreshToken | None = result.scalar_one_or_none()
     if rt and not rt.revoked:
         rt.revoked = True
+
+
+@router.put(
+    "/push-token",
+    status_code=status.HTTP_204_NO_CONTENT,
+    summary="Update the FCM push token for the current user",
+)
+async def update_push_token(
+    body: PushTokenUpdate, current_user: CurrentUser, db: DbSession
+) -> None:
+    current_user.firebase_push_token = body.token
+    await db.flush()
+    logger.info("Updated push token", extra={"user_id": str(current_user.id)})
+
+
+@router.post(
+    "/social/firebase",
+    response_model=TokenResponse,
+    summary="Authenticate or register via Firebase Auth ID token",
+)
+async def social_login_firebase(
+    body: SocialLoginRequest, db: DbSession
+) -> TokenResponse:
+    from app.core.firebase import get_firebase_app
+    from firebase_admin import auth as fb_auth
+
+    firebase_app = get_firebase_app()
+    if firebase_app is None:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="Firebase integration is not configured on this server.",
+        )
+
+    try:
+        # Verify the ID token using the Firebase Admin SDK
+        decoded_token = fb_auth.verify_id_token(body.id_token, app=firebase_app)
+    except Exception as e:
+        logger.warning("Invalid Firebase ID token: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired ID token.",
+        )
+
+    email = decoded_token.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="ID token does not contain an email address.",
+        )
+    email = email.strip().lower()
+
+    # Look up the user by email
+    result = await db.execute(select(User).where(User.email == email))
+    user: User | None = result.scalar_one_or_none()
+
+    if user is None:
+        # Provision a new user if they don't exist yet
+        # Social login accounts typically don't use passwords, so we use an unusable hash
+        name = decoded_token.get("name") or decoded_token.get("email").split("@")[0]
+        user = User(
+            email=email,
+            phone=None, # Not guaranteed to be in Firebase token unless phone auth is used
+            password_hash=hash_password("!unusable_social_login_pwd_xyz123!"),
+            display_name=name,
+        )
+        db.add(user)
+        await db.flush()
+        logger.info("Provisioned new user via social login", extra={"user_id": str(user.id)})
+    elif not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account has been disabled.",
+        )
+
+    tokens = await auth_service.issue_token_pair(db, user.id)
+    logger.info("User logged in (social)", extra={"user_id": str(user.id)})
+    return tokens

@@ -21,8 +21,12 @@ from sqlalchemy import select
 
 from app.api.deps import CurrentUser, DbSession
 from app.db.models.compost_cycle import CompostCycle
-from app.schemas.cycle import CompostCycleCreate, CompostCycleOut, CompostCycleUpdate
+from app.db.models.user import User
+from app.db.models.user_device import UserDevice
+from app.db.models.sensor_reading import SensorReading
+from app.schemas.cycle import CompostCycleCreate, CompostCycleOut, CompostCycleUpdate, CycleInsightsOut
 from app.services import device_access
+from app.workers.tasks.notifications import send_push_notification
 
 logger = logging.getLogger(__name__)
 
@@ -79,6 +83,7 @@ async def create_cycle(
     )
     db.add(cycle)
     await db.flush()
+    await db.refresh(cycle)
     logger.info("Compost cycle started", extra={"device_id": str(device_id), "cycle_id": str(cycle.id)})
     return cycle
 
@@ -142,12 +147,128 @@ async def update_cycle(
     if body.ended_at is not None:
         cycle.ended_at = body.ended_at
 
+    cycle_completed_now = False
     if body.status is not None and body.status != cycle.status:
+        if body.status == "completed":
+            cycle_completed_now = True
+            # Stamp an end time when the batch is finished, unless one was supplied.
+            if cycle.ended_at is None:
+                cycle.ended_at = body.ended_at or datetime.now(timezone.utc)
         cycle.status = body.status
-        # Stamp an end time when the batch is finished, unless one was supplied.
-        if body.status == "completed" and cycle.ended_at is None:
-            cycle.ended_at = body.ended_at or datetime.now(timezone.utc)
 
     await db.flush()
+    await db.refresh(cycle)
+
+    if cycle_completed_now:
+        try:
+            member_tokens = (
+                await db.execute(
+                    select(User.id, User.firebase_push_token)
+                    .join(UserDevice, UserDevice.user_id == User.id)
+                    .where(
+                        UserDevice.device_id == cycle.device_id,
+                        User.firebase_push_token.isnot(None),
+                    )
+                )
+            ).all()
+
+            for member_id, token in member_tokens:
+                send_push_notification.apply_async(
+                    kwargs={
+                        "user_id": str(member_id),
+                        "fcm_token": token,
+                        "title": "🌱 Compost Batch Complete!",
+                        "body": f"Your compost batch '{cycle.label or 'Unnamed'}' is fully cured and ready to use.",
+                        "data": {"device_id": str(cycle.device_id), "cycle_id": str(cycle.id)},
+                    },
+                    queue="default",
+                )
+        except Exception:
+            logger.warning(
+                "Could not dispatch cycle completion push notifications",
+                extra={"device_id": str(cycle.device_id)},
+                exc_info=True,
+            )
+
     logger.info("Compost cycle updated", extra={"cycle_id": str(cycle_id), "status": cycle.status})
     return cycle
+
+from sqlalchemy import func, text
+from datetime import timedelta
+
+@router.get(
+    "/cycles/{cycle_id}/insights",
+    response_model=CycleInsightsOut,
+    summary="Get predictive insights for a cycle",
+)
+async def get_cycle_insights(
+    cycle_id: uuid.UUID, current_user: CurrentUser, db: DbSession
+) -> CycleInsightsOut:
+    cycle = await _load_cycle_with_access(cycle_id, db, current_user.id)
+
+    # Use TimescaleDB time_bucket to aggregate daily average temperatures
+    result = await db.execute(
+        select(
+            func.time_bucket(text("'1 day'"), SensorReading.time).label('day'),
+            func.avg(SensorReading.temperature_c).label('avg_temp')
+        )
+        .where(
+            SensorReading.device_id == cycle.device_id,
+            SensorReading.time >= cycle.started_at,
+            SensorReading.time <= (cycle.ended_at or datetime.now(timezone.utc))
+        )
+        .group_by('day')
+        .order_by('day')
+    )
+
+    daily_temps = result.all()
+
+    degree_days = 0.0
+    latest_temp = None
+    for row in daily_temps:
+        avg_t = row.avg_temp
+        if avg_t is not None:
+            latest_temp = avg_t
+            if avg_t > 20:
+                degree_days += (avg_t - 20)
+
+    TARGET_DEGREE_DAYS = 500.0
+    percent_complete = min(100, int((degree_days / TARGET_DEGREE_DAYS) * 100))
+
+    if latest_temp is None:
+        current_phase = "Initializing"
+    elif latest_temp > 45:
+        current_phase = "Thermophilic (Active Composting)"
+    elif latest_temp > 30:
+        current_phase = "Mesophilic (Warming/Cooling)"
+    else:
+        current_phase = "Maturation (Curing)"
+
+    estimated_completion_date = None
+    if percent_complete < 100 and latest_temp and latest_temp > 20:
+        remaining_dd = TARGET_DEGREE_DAYS - degree_days
+        current_rate = latest_temp - 20
+        days_remaining = remaining_dd / current_rate
+        estimated_completion_date = datetime.now(timezone.utc) + timedelta(days=days_remaining)
+    elif percent_complete >= 100:
+        estimated_completion_date = cycle.ended_at or datetime.now(timezone.utc)
+
+    recommendations = []
+    if current_phase == "Initializing":
+        recommendations.append("Insufficient data. Ensure the composter is running.")
+    elif current_phase == "Maturation (Curing)" and percent_complete < 50:
+        recommendations.append("Temperature is dropping prematurely. Consider adding green, nitrogen-rich waste.")
+    elif current_phase == "Thermophilic (Active Composting)":
+        recommendations.append("Optimal composting temperature achieved. Maintain aeration.")
+    
+    if percent_complete >= 100:
+        recommendations.append("Compost is fully cured and ready to use!")
+
+    return CycleInsightsOut(
+        estimated_completion_date=estimated_completion_date,
+        current_phase=current_phase,
+        degree_days_accumulated=round(degree_days, 1),
+        percent_complete=percent_complete,
+        recommendations=recommendations
+    )
+

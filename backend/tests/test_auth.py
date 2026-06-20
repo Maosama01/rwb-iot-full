@@ -20,8 +20,9 @@ class TestRegister:
             "/api/v1/auth/register",
             json={
                 "email": "new@rawbin.io",
-                "password": "Str0ngPass!",
+                "password": "Pass123!",
                 "display_name": "New User",
+                "phone": "+14155552671",
             },
         )
         assert resp.status_code == 201
@@ -37,15 +38,16 @@ class TestRegister:
     async def test_register_duplicate_email(self, async_client: AsyncClient):
         payload = {
             "email": "dup@rawbin.io",
-            "password": "Str0ngPass!",
+            "password": "Pass123!",
             "display_name": "First",
+            "phone": "+14155552671",
         }
         r1 = await async_client.post("/api/v1/auth/register", json=payload)
         assert r1.status_code == 201
 
         r2 = await async_client.post(
             "/api/v1/auth/register",
-            json={**payload, "display_name": "Second"},
+            json={**payload, "display_name": "Second", "phone": "+14155552672"},
         )
         assert r2.status_code == 409
         assert "already exists" in r2.json()["detail"]
@@ -60,7 +62,7 @@ class TestRegister:
     async def test_register_invalid_email(self, async_client: AsyncClient):
         resp = await async_client.post(
             "/api/v1/auth/register",
-            json={"email": "not-an-email", "password": "Pass123!", "display_name": "X"},
+            json={"email": "not-an-email", "password": "Pass123!", "display_name": "X", "phone": "+14155552671"},
         )
         assert resp.status_code == 422
 

@@ -1,40 +1,60 @@
 import { useState, useEffect } from 'react';
-import { Bell, AlertTriangle, Filter } from 'lucide-react';
+import { Bell, AlertTriangle, Filter, Settings, CheckCircle } from 'lucide-react';
 import { api } from '../api/client';
 import { useDevices } from '../context/DeviceContext';
+import { useToast } from '../context/ToastContext';
 import { format } from 'date-fns';
+import ThresholdSettingsModal from '../components/ThresholdSettingsModal';
 
 export default function AlertsPage() {
   const { selectedDevice } = useDevices();
+  const { success, error } = useToast();
   const [alerts, setAlerts] = useState<any[]>([]);
   const [total, setTotal] = useState(0);
   const [offset, setOffset] = useState(0);
   const [severity, setSeverity] = useState('');
   const [metric, setMetric] = useState('');
   const [loading, setLoading] = useState(false);
+  const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const limit = 20;
 
-  useEffect(() => {
+  const fetchAlerts = async () => {
     if (!selectedDevice) return;
-    const fetchAlerts = async () => {
-      setLoading(true);
-      try {
-        const data = await api.listAlerts(selectedDevice.id, {
-          limit,
-          offset,
-          severity: severity || undefined,
-          metric: metric || undefined,
-        });
-        setAlerts(data.items);
-        setTotal(data.total);
-      } catch (err) {
-        console.error('Failed to fetch alerts:', err);
-      } finally {
-        setLoading(false);
-      }
-    };
+    setLoading(true);
+    try {
+      const data = await api.listAlerts(selectedDevice.id, {
+        limit,
+        offset,
+        severity: severity || undefined,
+        metric: metric || undefined,
+      });
+      setAlerts(data.items);
+      setTotal(data.total);
+    } catch (err) {
+      console.error('Failed to fetch alerts:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
     fetchAlerts();
   }, [selectedDevice, offset, severity, metric]);
+
+  const handleAcknowledge = async (alertId: string) => {
+    if (!selectedDevice) return;
+    try {
+      await api.acknowledgeAlert(selectedDevice.id, alertId);
+      success('Alert acknowledged');
+      // Refresh the list slightly to update the acknowledged status
+      setAlerts((prev) => 
+        prev.map(a => a.id === alertId ? { ...a, acknowledged: true, acknowledged_at: new Date().toISOString() } : a)
+      );
+    } catch (err) {
+      console.error('Failed to acknowledge alert:', err);
+      error('Failed to acknowledge alert');
+    }
+  };
 
   if (!selectedDevice) {
     return (
@@ -50,11 +70,20 @@ export default function AlertsPage() {
 
   return (
     <div className="animate-fade-in">
-      <div className="mb-8">
-        <h1 className="text-4xl font-bold text-text-primary tracking-tight mb-2 flex items-center gap-3">
-          Alert History <Bell className="text-alert" size={32} />
-        </h1>
-        <p className="text-text-secondary font-medium">{selectedDevice.display_name} — {total} total recorded events</p>
+      <div className="flex justify-between items-end mb-8">
+        <div>
+          <h1 className="text-4xl font-bold text-text-primary tracking-tight mb-2 flex items-center gap-3">
+            Alert History <Bell className="text-alert" size={32} />
+          </h1>
+          <p className="text-text-secondary font-medium">{selectedDevice.display_name} — {total} total recorded events</p>
+        </div>
+        <button 
+          onClick={() => setIsSettingsOpen(true)}
+          className="btn btn-secondary flex items-center gap-2 bg-white"
+        >
+          <Settings size={18} className="text-primary" />
+          Alert Settings
+        </button>
       </div>
 
       {/* Filters */}
@@ -114,6 +143,7 @@ export default function AlertsPage() {
                   <th className="p-4 text-xs font-bold uppercase tracking-wider text-text-secondary">Threshold</th>
                   <th className="p-4 text-xs font-bold uppercase tracking-wider text-text-secondary">Message</th>
                   <th className="p-4 text-xs font-bold uppercase tracking-wider text-text-secondary">Time</th>
+                  <th className="p-4 text-xs font-bold uppercase tracking-wider text-text-secondary text-right">Actions</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-border">
@@ -129,6 +159,21 @@ export default function AlertsPage() {
                     <td className="p-4 text-text-muted font-mono">{Number(a.threshold).toFixed(1)}</td>
                     <td className="p-4 text-text-secondary text-sm">{a.message}</td>
                     <td className="p-4 text-text-muted text-sm whitespace-nowrap">{format(new Date(a.created_at), 'MMM d, HH:mm')}</td>
+                    <td className="p-4 text-right">
+                      {a.acknowledged ? (
+                        <div className="flex items-center justify-end gap-1 text-emerald font-medium text-xs">
+                          <CheckCircle size={14} />
+                          Ack'd
+                        </div>
+                      ) : (
+                        <button 
+                          onClick={() => handleAcknowledge(a.id)}
+                          className="px-3 py-1 bg-background hover:bg-border rounded-lg text-xs font-medium text-text-primary transition-colors border border-border"
+                        >
+                          Acknowledge
+                        </button>
+                      )}
+                    </td>
                   </tr>
                 ))}
               </tbody>
@@ -159,6 +204,12 @@ export default function AlertsPage() {
           </div>
         )}
       </div>
+
+      <ThresholdSettingsModal
+        isOpen={isSettingsOpen}
+        onClose={() => setIsSettingsOpen(false)}
+        deviceId={selectedDevice.id}
+      />
     </div>
   );
 }

@@ -167,6 +167,13 @@ class ApiClient {
     return this.request('/users/me');
   }
 
+  async updatePushToken(token: string) {
+    return this.request('/users/me/push-token', {
+      method: 'PUT',
+      body: JSON.stringify({ token }),
+    });
+  }
+
   // Devices
   async listDevices() {
     return this.request('/devices/');
@@ -212,6 +219,41 @@ class ApiClient {
     return this.request(`/telemetry/${deviceId}/history?${params}`);
   }
 
+  async getLatestTelemetry(deviceId: string) {
+    return this.request(`/telemetry/${deviceId}/latest`);
+  }
+
+  async exportTelemetry(deviceId: string, interval = 'hour', from: string | null = null, to: string | null = null) {
+    const params = new URLSearchParams({ interval });
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    
+    // We cannot use this.request() because it assumes JSON response
+    const headers: Record<string, string> = {};
+    const tokens = this.getTokens();
+    if (tokens?.access_token) {
+      headers['Authorization'] = `Bearer ${tokens.access_token}`;
+    }
+
+    const response = await fetch(`${this.baseUrl}/telemetry/${deviceId}/export?${params}`, {
+      headers,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Export failed with status: ${response.status}`);
+    }
+
+    const blob = await response.blob();
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `telemetry_${deviceId}_${interval}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    window.URL.revokeObjectURL(url);
+  }
+
   // Alerts
   async listAlerts(deviceId: string, { limit = 20, offset = 0, severity, metric }: { limit?: number; offset?: number; severity?: string; metric?: string } = {}) {
     const params = new URLSearchParams();
@@ -220,6 +262,12 @@ class ApiClient {
     if (severity) params.set('severity', severity);
     if (metric) params.set('metric', metric);
     return this.request(`/devices/${deviceId}/alerts?${params}`);
+  }
+
+  async acknowledgeAlert(deviceId: string, alertId: string) {
+    return this.request(`/devices/${deviceId}/alerts/${alertId}/acknowledge`, {
+      method: 'POST',
+    });
   }
 
   // Cycles
@@ -240,6 +288,23 @@ class ApiClient {
       method: 'PATCH',
       body: JSON.stringify(data),
     });
+  }
+
+  async getCycleInsights(cycleId: string) {
+    return this.request(`/cycles/${cycleId}/insights`);
+  }
+
+  // Analytics
+  async getAnalyticsCompare(from: string | null = null, to: string | null = null) {
+    const params = new URLSearchParams();
+    if (from) params.set('from', from);
+    if (to) params.set('to', to);
+    const qs = params.toString() ? `?${params}` : '';
+    return this.request(`/analytics/compare${qs}`);
+  }
+
+  async getPredictiveInsights(deviceId: string) {
+    return this.request(`/analytics/predictive/${deviceId}`);
   }
 
   // Waste Logs

@@ -137,6 +137,7 @@ async def registered_user(async_client: AsyncClient) -> dict:
             "email": "fixture@rawbin.io",
             "password": "FixturePass123!",
             "display_name": "Fixture User",
+            "phone": "+14155552671",
         },
     )
     assert resp.status_code == 201, resp.text

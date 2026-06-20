@@ -4,6 +4,7 @@ import { api } from '../api/client';
 import { useDevices } from '../context/DeviceContext';
 import { format } from 'date-fns';
 import { useToast } from '../context/ToastContext';
+import PredictiveInsightsWidget from '../components/PredictiveInsightsWidget';
 
 const WASTE_TYPES = ['food_scraps', 'yard_waste', 'paper', 'sawdust', 'manure', 'other'];
 
@@ -181,6 +182,8 @@ export default function CompostPage() {
               {activeCycle.notes && <p className="text-text-muted text-sm bg-white/50 p-3 rounded-xl">{activeCycle.notes}</p>}
             </div>
           )}
+
+          {activeCycle && <PredictiveInsightsWidget cycleId={activeCycle.id} />}
 
           {pastCycles.length > 0 && (
             <div className="flex flex-col gap-4 mt-4">
