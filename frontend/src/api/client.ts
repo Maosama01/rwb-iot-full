@@ -211,6 +211,14 @@ class ApiClient {
     });
   }
 
+  // --- AI ---
+  async aiAsk(deviceId: string, question: string) {
+    return this.request(`/ai/ask`, {
+      method: 'POST',
+      body: JSON.stringify({ device_id: deviceId, question }),
+    });
+  }
+
   // Telemetry
   async getTelemetryHistory(deviceId: string, interval = 'hour', from: string | null = null, to: string | null = null) {
     const params = new URLSearchParams({ interval });
