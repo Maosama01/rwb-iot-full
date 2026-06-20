@@ -9,7 +9,9 @@ import {
   Leaf,
   BarChart2,
   Moon,
-  Sun
+  Sun,
+  Scale,
+  Plus
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { useTheme } from '../context/ThemeContext';
@@ -29,6 +31,7 @@ const Sidebar: React.FC = () => {
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', end: true },
     { name: 'Compost', icon: Activity, path: '/dashboard/compost', end: false },
+    { name: 'Waste Log', icon: Scale, path: '/dashboard/waste', end: false },
     { name: 'Analytics', icon: BarChart2, path: '/dashboard/analytics', end: false },
     { name: 'Alerts', icon: BellRing, path: '/dashboard/alerts', end: false },
     { name: 'Settings', icon: Settings, path: '/dashboard/device-settings', end: false },
@@ -61,6 +64,20 @@ const Sidebar: React.FC = () => {
             <span className="text-[10px] md:text-base md:inline">{item.name}</span>
           </NavLink>
         ))}
+        
+        <NavLink
+          to="/dashboard/setup"
+          className={({ isActive }) =>
+            `hidden md:flex flex-row items-center justify-start gap-3 px-4 py-3 rounded-2xl font-bold mt-4 border-2 border-dashed transition-all duration-200 ${
+              isActive
+                ? 'border-emerald bg-emerald/10 text-emerald'
+                : 'border-emerald/30 text-emerald hover:bg-emerald/5 hover:border-emerald'
+            }`
+          }
+        >
+          <div className="bg-emerald text-white rounded-full p-1"><Plus size={16} /></div>
+          <span>Add New Rawbin</span>
+        </NavLink>
       </nav>
 
       <div className="p-2 md:p-4 md:border-t border-border flex flex-col gap-2">

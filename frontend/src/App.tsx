@@ -9,6 +9,8 @@ import DashboardPage from './pages/DashboardPage';
 import AlertsPage from './pages/AlertsPage';
 import CompostPage from './pages/CompostPage';
 import DeviceSettingsPage from './pages/DeviceSettingsPage';
+import DeviceSetupPage from './pages/DeviceSetupPage';
+import WasteLogPage from './pages/WasteLogPage';
 import AnalyticsPage from './pages/AnalyticsPage';
 import LandingPage from './pages/LandingPage';
 
@@ -75,8 +77,10 @@ function App() {
                           <Route path="/" element={<DashboardPage />} />
                           <Route path="/alerts" element={<AlertsPage />} />
                           <Route path="/compost" element={<CompostPage />} />
+                          <Route path="/waste" element={<WasteLogPage />} />
                           <Route path="/device-settings" element={<DeviceSettingsPage />} />
                           <Route path="/analytics" element={<AnalyticsPage />} />
+                          <Route path="/setup" element={<DeviceSetupPage />} />
                         </Routes>
                       </AppLayout>
                     </DeviceProvider>
