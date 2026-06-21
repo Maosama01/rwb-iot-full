@@ -26,6 +26,7 @@ from datetime import datetime, timezone
 
 import paho.mqtt.client as mqtt
 from sqlalchemy import select
+from sqlalchemy.dialects.postgresql import insert
 
 from app.core.config import get_settings
 from app.db.models.device import Device
@@ -46,6 +47,8 @@ class MQTTIngestionClient:
         self.client = mqtt.Client(
             mqtt.CallbackAPIVersion.VERSION2,
             client_id=settings.MQTT_CLIENT_ID,
+            clean_session=False,  # persistent session: broker keeps our subscription
+                                  # + queues QoS-1 messages while we're offline
         )
         self.client.username_pw_set(settings.MQTT_USERNAME, settings.MQTT_PASSWORD)
         self.client.on_connect = self.on_connect
@@ -57,7 +60,9 @@ class MQTTIngestionClient:
     def on_connect(self, client, userdata, flags, reason_code, properties):
         if reason_code == 0:
             logger.info("Connected to MQTT broker successfully.")
-            client.subscribe(TELEMETRY_TOPIC)
+            # QoS 1 so the broker queues messages for this (persistent) session
+            # while the worker is offline, and redelivers on reconnect.
+            client.subscribe(TELEMETRY_TOPIC, qos=1)
         else:
             logger.error("Failed to connect to MQTT broker, reason_code=%s", reason_code)
 
@@ -101,30 +106,42 @@ class MQTTIngestionClient:
                     logger.warning("Telemetry for unknown device %s — dropped", device_id)
                     return
 
-                row = SensorReading(
-                    time=reading.time,
-                    device_id=device_id,
-                    temperature_c=reading.temperature_c,
-                    humidity_pct=reading.humidity_pct,
-                    co2_ppm=reading.co2_ppm,
-                    ph_level=reading.ph_level,
-                    ambient_temp_c=reading.ambient_temp_c,
-                    fan_speed_rpm=reading.fan_speed_rpm,
-                    fill_level_pct=reading.fill_level_pct,
-                    weight_kg=reading.weight_kg,
-                    firmware_version=reading.firmware_version,
+                stmt = (
+                    insert(SensorReading)
+                    .values(
+                        time=reading.time,
+                        device_id=device_id,
+                        temperature_c=reading.temperature_c,
+                        humidity_pct=reading.humidity_pct,
+                        co2_ppm=reading.co2_ppm,
+                        ph_level=reading.ph_level,
+                        ambient_temp_c=reading.ambient_temp_c,
+                        fan_speed_rpm=reading.fan_speed_rpm,
+                        fill_level_pct=reading.fill_level_pct,
+                        weight_kg=reading.weight_kg,
+                        firmware_version=reading.firmware_version,
+                    )
+                    .on_conflict_do_nothing(
+                        index_elements=[SensorReading.time, SensorReading.device_id]
+                    )
                 )
+                result = await db.execute(stmt)
+
                 if reading.firmware_version:
                     device.firmware_version = reading.firmware_version
 
-                db.add(row)
                 await db.commit()
-                logger.info("Inserted telemetry for %s @ %s", device_id, reading.time)
 
-                # Fire the post-ingestion alert check (Celery). Failure to enqueue
-                # must not lose the already-committed reading, but it IS logged
-                # (previously swallowed silently).
-                self._dispatch_alert_check(device_id, reading)
+                if result.rowcount:
+                    logger.info("Inserted telemetry for %s @ %s", device_id, reading.time)
+                    # Fire the post-ingestion alert check (Celery). Failure to enqueue
+                    # must not lose the already-committed reading, but it IS logged
+                    # (previously swallowed silently).
+                    self._dispatch_alert_check(device_id, reading)
+                else:
+                    logger.debug(
+                        "Duplicate telemetry dropped for %s @ %s", device_id, reading.time
+                    )
             except Exception:
                 logger.error("Error processing telemetry for %s", device_id, exc_info=True)
                 await db.rollback()

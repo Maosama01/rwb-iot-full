@@ -81,6 +81,7 @@ async def create_waste_log(
     )
     db.add(entry)
     await db.flush()
+    await db.refresh(entry)  # reload server-set columns (created_at/updated_at) before serialization
     logger.info("Waste logged", extra={"device_id": str(device_id), "waste_id": str(entry.id)})
     return entry
 

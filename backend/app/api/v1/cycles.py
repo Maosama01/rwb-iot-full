@@ -14,10 +14,10 @@ enforced both here (friendly 409) and by a DB partial-unique index (safety net).
 
 import logging
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, HTTPException, Query, status
-from sqlalchemy import select
+from sqlalchemy import func, select, text
 
 from app.api.deps import CurrentUser, DbSession
 from app.db.models.compost_cycle import CompostCycle
@@ -83,7 +83,7 @@ async def create_cycle(
     )
     db.add(cycle)
     await db.flush()
-    await db.refresh(cycle)
+    await db.refresh(cycle)  # reload server-set columns (created_at/updated_at) before serialization
     logger.info("Compost cycle started", extra={"device_id": str(device_id), "cycle_id": str(cycle.id)})
     return cycle
 
@@ -157,7 +157,7 @@ async def update_cycle(
         cycle.status = body.status
 
     await db.flush()
-    await db.refresh(cycle)
+    await db.refresh(cycle)  # reload server-set columns (updated_at) before serialization
 
     if cycle_completed_now:
         try:
@@ -193,8 +193,6 @@ async def update_cycle(
     logger.info("Compost cycle updated", extra={"cycle_id": str(cycle_id), "status": cycle.status})
     return cycle
 
-from sqlalchemy import func, text
-from datetime import timedelta
 
 @router.get(
     "/cycles/{cycle_id}/insights",
