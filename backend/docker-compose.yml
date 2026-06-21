@@ -26,7 +26,9 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
     ports:
-      - "5432:5432"
+      # Host 5432 is taken by a native Windows PostgreSQL, so publish on 5433.
+      # The container still listens on 5432 internally (app/worker use db:5432).
+      - "5433:5432"
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-rawbin} -d ${POSTGRES_DB:-rawbin}"]
       interval: 5s

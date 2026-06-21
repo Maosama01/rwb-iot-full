@@ -79,6 +79,7 @@ async def create_cycle(
     )
     db.add(cycle)
     await db.flush()
+    await db.refresh(cycle)  # reload server-set columns (created_at/updated_at) before serialization
     logger.info("Compost cycle started", extra={"device_id": str(device_id), "cycle_id": str(cycle.id)})
     return cycle
 
@@ -149,5 +150,6 @@ async def update_cycle(
             cycle.ended_at = body.ended_at or datetime.now(timezone.utc)
 
     await db.flush()
+    await db.refresh(cycle)  # reload server-set columns (updated_at) before serialization
     logger.info("Compost cycle updated", extra={"cycle_id": str(cycle_id), "status": cycle.status})
     return cycle
