@@ -231,6 +231,9 @@ export default function DeviceSettingsPage() {
               ))}
             </div>
           </div>
+          
+          {/* Firmware OTA Updates Card */}
+          <FirmwareUpdateCard />
         </div>
       </div>
 
@@ -244,6 +247,104 @@ export default function DeviceSettingsPage() {
         message="Are you sure you want to revoke this user's access to the device?"
         confirmText="Remove Access"
       />
+    </div>
+  );
+}
+
+function FirmwareUpdateCard() {
+  const [status, setStatus] = useState<'idle' | 'checking' | 'available' | 'updating' | 'success'>('idle');
+  const [progress, setProgress] = useState(0);
+
+  const handleCheck = () => {
+    setStatus('checking');
+    setTimeout(() => {
+      setStatus('available');
+    }, 2000);
+  };
+
+  const handleUpdate = () => {
+    setStatus('updating');
+    setProgress(0);
+    const interval = setInterval(() => {
+      setProgress((prev) => {
+        if (prev >= 100) {
+          clearInterval(interval);
+          setStatus('success');
+          return 100;
+        }
+        return prev + 10;
+      });
+    }, 400);
+  };
+
+  return (
+    <div className="organic-card p-8 bg-gradient-to-br from-[#0B251C] to-[#0A1A14] text-white border-none relative overflow-hidden">
+      {/* Decorative Orbs */}
+      <div className="absolute top-[-50%] left-[-20%] w-64 h-64 bg-emerald-500/20 rounded-full blur-[80px] pointer-events-none"></div>
+      
+      <div className="relative z-10">
+        <h2 className="text-xl font-bold mb-6 flex items-center gap-2 text-white">
+          <Settings size={20} className="text-[#34D399]" /> Firmware & OTA
+        </h2>
+
+        <div className="flex justify-between items-center mb-8">
+          <div>
+            <p className="text-[#A7F3D0]/70 text-xs uppercase tracking-widest font-bold mb-1">Current Version</p>
+            <p className="text-2xl font-extrabold tracking-tight">DEMO-1.0.0</p>
+          </div>
+          <div className="px-3 py-1 bg-white/10 rounded-full text-xs font-bold text-white border border-white/10">
+            Stable
+          </div>
+        </div>
+
+        {status === 'idle' && (
+          <button onClick={handleCheck} className="w-full py-3 bg-white text-[#0B251C] font-bold rounded-xl hover:bg-gray-100 transition-colors">
+            Check for Updates
+          </button>
+        )}
+
+        {status === 'checking' && (
+          <div className="flex items-center justify-center py-3">
+            <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin mr-3"></div>
+            <span className="font-bold text-[#A7F3D0]">Checking servers...</span>
+          </div>
+        )}
+
+        {status === 'available' && (
+          <div className="animate-fade-in-up">
+            <div className="p-4 bg-emerald-500/20 border border-emerald-500/30 rounded-xl mb-4">
+              <p className="font-bold text-white mb-1">Update Available: DEMO-1.0.1</p>
+              <p className="text-xs text-[#A7F3D0]/80">Includes improved PID tuning for fan control and general stability fixes.</p>
+            </div>
+            <button onClick={handleUpdate} className="w-full py-3 bg-[#34D399] text-[#0B251C] font-bold rounded-xl hover:bg-[#10B981] transition-colors shadow-[0_0_20px_rgba(52,211,153,0.3)]">
+              Download & Install
+            </button>
+          </div>
+        )}
+
+        {status === 'updating' && (
+          <div className="animate-fade-in">
+            <div className="flex justify-between text-xs font-bold mb-2">
+              <span className="text-[#A7F3D0]">Flashing Firmware...</span>
+              <span className="text-white">{progress}%</span>
+            </div>
+            <div className="h-2 w-full bg-white/10 rounded-full overflow-hidden">
+               <div className="h-full bg-gradient-to-r from-[#34D399] to-[#10B981] rounded-full transition-all duration-300" style={{ width: `${progress}%` }}></div>
+            </div>
+            <p className="text-xs text-white/50 mt-4 text-center">Do not power off your Rawbin.</p>
+          </div>
+        )}
+
+        {status === 'success' && (
+          <div className="flex flex-col items-center justify-center animate-fade-in-up py-4">
+            <div className="w-12 h-12 bg-[#34D399]/20 rounded-full flex items-center justify-center mb-3 text-[#34D399]">
+              <Shield size={24} />
+            </div>
+            <p className="font-bold text-white text-lg">Update Complete!</p>
+            <p className="text-xs text-[#A7F3D0]/70 text-center">Your Rawbin is now running DEMO-1.0.1.</p>
+          </div>
+        )}
+      </div>
     </div>
   );
 }

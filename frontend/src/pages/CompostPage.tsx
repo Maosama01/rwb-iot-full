@@ -4,24 +4,18 @@ import { api } from '../api/client';
 import { useDevices } from '../context/DeviceContext';
 import { format } from 'date-fns';
 import { useToast } from '../context/ToastContext';
+import PredictiveInsightsWidget from '../components/PredictiveInsightsWidget';
 
-const WASTE_TYPES = ['food_scraps', 'yard_waste', 'paper', 'sawdust', 'manure', 'other'];
 
 export default function CompostPage() {
   const { selectedDevice } = useDevices();
   const { error } = useToast();
   const [cycles, setCycles] = useState<any[]>([]);
-  const [wasteLogs, setWasteLogs] = useState<any[]>([]);
   const [showNewCycle, setShowNewCycle] = useState(false);
-  const [showWasteForm, setShowWasteForm] = useState(false);
   
   const [cycleLabel, setCycleLabel] = useState('');
   const [cycleNotes, setCycleNotes] = useState('');
-  const [wasteType, setWasteType] = useState('food_scraps');
-  const [wasteWeight, setWasteWeight] = useState('');
-  const [wasteNotes, setWasteNotes] = useState('');
   const [isSubmittingCycle, setIsSubmittingCycle] = useState(false);
-  const [isSubmittingWaste, setIsSubmittingWaste] = useState(false);
 
   useEffect(() => {
     if (!selectedDevice) return;
@@ -30,12 +24,10 @@ export default function CompostPage() {
 
   const fetchData = async () => {
     try {
-      const [c, w] = await Promise.all([
+      const [c] = await Promise.all([
         api.listCycles(selectedDevice.id),
-        api.listWasteLogs(selectedDevice.id),
       ]);
       setCycles(c);
-      setWasteLogs(w.items || []);
     } catch (err) {
       console.error('Failed to fetch compost data:', err);
     }
@@ -81,25 +73,6 @@ export default function CompostPage() {
     }
   };
 
-  const handleAddWaste = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSubmittingWaste(true);
-    try {
-      await api.createWasteLog(selectedDevice.id, {
-        waste_type: wasteType,
-        weight_kg: parseFloat(wasteWeight) || null,
-        notes: wasteNotes || null,
-      });
-      setWasteWeight('');
-      setWasteNotes('');
-      setShowWasteForm(false);
-      fetchData();
-    } catch (err: any) {
-      error(err.message);
-    } finally {
-      setIsSubmittingWaste(false);
-    }
-  };
 
   if (!selectedDevice) {
     return (
@@ -125,7 +98,7 @@ export default function CompostPage() {
         <p className="text-text-secondary font-medium">Manage active cycles and log waste for {selectedDevice.display_name}.</p>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+      <div className="max-w-3xl">
         {/* Cycles Column */}
         <div className="flex flex-col gap-6">
           <div className="flex items-center justify-between">
@@ -182,6 +155,8 @@ export default function CompostPage() {
             </div>
           )}
 
+          {activeCycle && <PredictiveInsightsWidget cycleId={activeCycle.id} />}
+
           {pastCycles.length > 0 && (
             <div className="flex flex-col gap-4 mt-4">
               <h3 className="text-sm font-bold text-text-muted uppercase tracking-wider pl-1">Past Cycles</h3>
@@ -215,75 +190,7 @@ export default function CompostPage() {
           )}
         </div>
 
-        {/* Waste Logs Column */}
-        <div className="flex flex-col gap-6">
-          <div className="flex items-center justify-between">
-            <h2 className="text-xl font-bold text-text-primary flex items-center gap-2">
-              <Scale size={20} className="text-primary-dark" /> Waste Logs
-            </h2>
-            <button className="btn btn-secondary bg-white px-4 py-2 text-sm border border-border" onClick={() => setShowWasteForm(true)}>
-              <Plus size={16} /> Log Waste
-            </button>
-          </div>
 
-          {showWasteForm && (
-            <form className="organic-card p-6 animate-fade-in-up" onSubmit={handleAddWaste}>
-              <div className="flex flex-col gap-4 mb-6">
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">Waste Type</label>
-                  <select className="input-field py-2.5 capitalize" value={wasteType} onChange={(e) => setWasteType(e.target.value)}>
-                    {WASTE_TYPES.map((t) => (
-                      <option key={t} value={t}>{t.replace('_', ' ')}</option>
-                    ))}
-                  </select>
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">Weight (kg)</label>
-                  <input type="number" step="0.1" className="input-field py-2.5" placeholder="e.g. 2.5" value={wasteWeight} onChange={(e) => setWasteWeight(e.target.value)} required />
-                </div>
-                <div className="flex flex-col gap-1.5">
-                  <label className="text-text-secondary text-xs font-bold uppercase tracking-wider pl-1">Notes</label>
-                  <input className="input-field py-2.5" placeholder="Optional" value={wasteNotes} onChange={(e) => setWasteNotes(e.target.value)} />
-                </div>
-              </div>
-              <div className="flex items-center gap-3">
-                <button type="submit" disabled={isSubmittingWaste} className="btn btn-primary py-2 px-6">
-                  {isSubmittingWaste ? 'Adding...' : 'Add Log'}
-                </button>
-                <button type="button" disabled={isSubmittingWaste} className="btn btn-secondary py-2 px-6 bg-white" onClick={() => setShowWasteForm(false)}>Cancel</button>
-              </div>
-            </form>
-          )}
-
-          {wasteLogs.length === 0 ? (
-            <div className="organic-card p-12 text-center flex flex-col items-center justify-center">
-              <Scale size={32} className="text-text-muted/30 mb-3" strokeWidth={1.5} />
-              <p className="text-text-secondary font-medium">No waste logged yet.</p>
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {wasteLogs.map((w) => (
-                <div key={w.id} className="organic-card p-4 flex justify-between items-center">
-                  <div>
-                    <div className="flex items-center gap-3 mb-1">
-                      <span className="px-2 py-0.5 rounded-md text-xs font-bold tracking-wider bg-primary/10 text-primary-dark uppercase">
-                        {w.waste_type.replace('_', ' ')}
-                      </span>
-                      <span className="text-text-muted text-xs font-medium">{format(new Date(w.logged_at), 'MMM d, HH:mm')}</span>
-                    </div>
-                    {w.notes && <p className="text-text-secondary text-sm mt-2">{w.notes}</p>}
-                  </div>
-                  {w.weight_kg && (
-                    <div className="text-right">
-                      <span className="text-2xl font-bold text-text-primary">{w.weight_kg}</span>
-                      <span className="text-text-muted font-medium ml-1">kg</span>
-                    </div>
-                  )}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
       </div>
     </div>
   );

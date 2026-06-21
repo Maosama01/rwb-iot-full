@@ -3,8 +3,54 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --bg-main: #FBFBFA;
+    --bg-surface: #FFFFFF;
+    
+    --color-primary-light: #A5C9A5;
+    --color-primary: #8FBC8F;
+    --color-primary-dark: #689B68;
+    
+    --color-emerald-light: #4CB580;
+    --color-emerald: #2E8B57;
+    --color-emerald-dark: #1E5E3A;
+    
+    --text-primary: #2F4F4F;
+    --text-secondary: #556B6B;
+    --text-muted: #8F9B9B;
+    
+    --alert-bg: #FDF3F1;
+    --alert-main: #E27D60;
+    --alert-dark: #C86144;
+    
+    --border-color: rgba(47, 79, 79, 0.08);
+  }
+
+  .dark {
+    --bg-main: #161816;
+    --bg-surface: #1E201E;
+    
+    --color-primary-light: #8DAA8D;
+    --color-primary: #759B75;
+    --color-primary-dark: #4F754F;
+    
+    --color-emerald-light: #3A9666;
+    --color-emerald: #2E8B57;
+    --color-emerald-dark: #1E5E3A;
+    
+    --text-primary: #E8ECE8;
+    --text-secondary: #A0ABA0;
+    --text-muted: #6C7A7A;
+    
+    --alert-bg: #382420;
+    --alert-main: #D96A4A;
+    --alert-dark: #E27D60;
+    
+    --border-color: rgba(255, 255, 255, 0.08);
+  }
+
   body {
-    @apply bg-background text-text-primary antialiased;
+    @apply bg-background text-text-primary antialiased transition-colors duration-300;
     font-family: 'Inter', system-ui, -apple-system, sans-serif;
   }
 }
@@ -34,7 +80,7 @@
   
   /* Inputs */
   .input-field {
-    @apply w-full px-5 py-3 bg-background border border-border rounded-2xl text-text-primary outline-none transition-all duration-200 focus:border-emerald focus:ring-4 focus:ring-primary-light/20;
+    @apply w-full px-5 py-3 bg-background border border-border rounded-2xl text-text-primary outline-none transition-all duration-200 focus:border-emerald focus:ring-4 focus:ring-primary-light;
   }
   .input-field::placeholder {
     @apply text-text-muted;

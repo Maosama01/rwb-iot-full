@@ -116,6 +116,23 @@ services:
       mosquitto:
         condition: service_started
 
+  # ─── Telemetry Simulator Worker ─────────────────────────────────────────────
+  simulator:
+    build:
+      context: .
+      target: runtime
+    container_name: rawbin_simulator
+    restart: unless-stopped
+    <<: *app-env
+    command: python -m scripts.telemetry_simulator
+    volumes:
+      - ./:/app
+    depends_on:
+      db:
+        condition: service_healthy
+      mosquitto:
+        condition: service_started
+
   # ─── Flower (Celery monitoring UI) ─────────────────────────────────────────
   flower:
     build:

@@ -1,5 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { Leaf, Mail, Lock, User, ArrowRight, Phone, Thermometer, Activity, ShieldCheck } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 
@@ -19,6 +19,7 @@ export default function LoginPage() {
   const otpRefs = useRef<(HTMLInputElement | null)[]>([]);
   
   const [error, setError] = useState('');
+  const [successMsg, setSuccessMsg] = useState('');
   const [loading, setLoading] = useState(false);
 
   const { login, register, requestOtp, verifyOtp } = useAuth();
@@ -59,6 +60,7 @@ export default function LoginPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setSuccessMsg('');
     setLoading(true);
     try {
       if (isRegister) {
@@ -66,9 +68,11 @@ export default function LoginPage() {
           email, 
           password, 
           display_name: displayName, 
-          phone: phone || undefined 
+          phone
         });
-        navigate('/dashboard');
+        setIsRegister(false);
+        setPassword('');
+        setSuccessMsg('Account created successfully. Please sign in.');
       } else {
         if (loginMethod === 'email') {
           await login(email, password);
@@ -144,12 +148,18 @@ export default function LoginPage() {
       <div className="w-full lg:w-1/2 flex items-center justify-center p-8 sm:p-12 bg-white relative">
          <div className="w-full max-w-[420px] animate-fade-in">
             {/* Mobile Logo Only */}
-            <div className="lg:hidden flex items-center gap-3 mb-10">
-              <div className="w-10 h-10 bg-emerald/10 rounded-xl flex items-center justify-center">
-                <Leaf className="text-emerald-dark" size={20} />
+            <div className="lg:hidden flex items-center justify-between mb-10">
+              <div className="flex items-center gap-3">
+                <div className="w-10 h-10 bg-emerald/10 rounded-xl flex items-center justify-center">
+                  <Leaf className="text-emerald-dark" size={20} />
+                </div>
+                <span className="text-2xl font-bold text-text-primary">Rawbin</span>
               </div>
-              <span className="text-2xl font-bold text-text-primary">Rawbin</span>
             </div>
+
+            <Link to="/" className="inline-flex items-center gap-2 text-sm font-bold text-text-secondary hover:text-text-primary transition-colors mb-8">
+              <ArrowRight size={16} className="rotate-180" /> Back to Home
+            </Link>
 
             <div className="mb-10">
               <h1 className="text-3xl font-extrabold text-text-primary tracking-tight mb-3">
@@ -168,7 +178,7 @@ export default function LoginPage() {
                 <button 
                   type="button"
                   className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 disabled:opacity-50 ${loginMethod === 'email' ? 'bg-white shadow-sm text-text-primary scale-[1.02]' : 'text-text-secondary hover:text-text-primary'}`}
-                  onClick={() => { setLoginMethod('email'); setError(''); setOtpSent(false); }}
+                  onClick={() => { setLoginMethod('email'); setError(''); setSuccessMsg(''); setOtpSent(false); }}
                   disabled={loading}
                 >
                   Email
@@ -176,7 +186,7 @@ export default function LoginPage() {
                 <button 
                   type="button"
                   className={`flex-1 py-3 rounded-xl text-sm font-bold transition-all duration-300 disabled:opacity-50 ${loginMethod === 'phone' ? 'bg-white shadow-sm text-text-primary scale-[1.02]' : 'text-text-secondary hover:text-text-primary'}`}
-                  onClick={() => { setLoginMethod('phone'); setError(''); }}
+                  onClick={() => { setLoginMethod('phone'); setError(''); setSuccessMsg(''); }}
                   disabled={loading}
                 >
                   Phone (OTP)
@@ -273,7 +283,7 @@ export default function LoginPage() {
 
                     {isRegister && (
                       <div className="flex flex-col gap-2">
-                        <label className="text-text-primary text-sm font-bold">Phone Number <span className="text-gray-400 font-medium">(Optional)</span></label>
+                        <label className="text-text-primary text-sm font-bold">Phone Number</label>
                         <div className="relative group">
                           <Phone size={18} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-emerald transition-colors" />
                           <input
@@ -284,6 +294,7 @@ export default function LoginPage() {
                             title="Must include country code, e.g. +1 or +91"
                             value={phone}
                             onChange={(e) => setPhone(e.target.value)}
+                            required
                           />
                         </div>
                       </div>
@@ -314,6 +325,13 @@ export default function LoginPage() {
                   </div>
                 )}
 
+                {successMsg && (
+                  <div className="flex items-center gap-2 p-4 rounded-xl bg-green-50 text-green-600 text-sm font-bold border border-green-100 animate-fade-in-up">
+                    <ShieldCheck size={18} className="shrink-0" />
+                    {successMsg}
+                  </div>
+                )}
+
                 <button
                   type="submit"
                   className="w-full py-4 rounded-2xl bg-text-primary text-white text-sm font-bold mt-4 flex justify-center items-center gap-2 group/btn hover:bg-black transition-colors disabled:opacity-70 disabled:cursor-not-allowed"
@@ -338,7 +356,7 @@ export default function LoginPage() {
               <button
                 type="button"
                 className="ml-2 text-text-primary font-bold text-sm hover:underline"
-                onClick={() => { setIsRegister(!isRegister); setError(''); }}
+                onClick={() => { setIsRegister(!isRegister); setError(''); setSuccessMsg(''); }}
               >
                 {isRegister ? 'Sign In' : 'Create Account'}
               </button>

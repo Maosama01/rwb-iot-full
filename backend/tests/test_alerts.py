@@ -163,7 +163,7 @@ async def test_list_alerts_non_member(
     # Register a second user
     r = await async_client.post(
         "/api/v1/auth/register",
-        json={"email": "other@rawbin.io", "password": "Other123!", "display_name": "Other"},
+        json={"email": "other@rawbin.io", "password": "Other123!", "display_name": "Other", "phone": "+14155550001"},
     )
     other_token = r.json()["tokens"]["access_token"]
     other_headers = {"Authorization": f"Bearer {other_token}"}

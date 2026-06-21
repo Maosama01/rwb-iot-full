@@ -53,3 +53,13 @@ class CompostCycleOut(BaseModel):
     notes: Optional[str] = None
     created_at: datetime
     updated_at: datetime
+
+
+class CycleInsightsOut(BaseModel):
+    """Predictive insights for a compost cycle."""
+
+    estimated_completion_date: Optional[datetime] = None
+    current_phase: str
+    degree_days_accumulated: float
+    percent_complete: int
+    recommendations: list[str]

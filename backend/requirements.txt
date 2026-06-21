@@ -41,3 +41,6 @@ pytest-env==1.6.0        # pytest.ini uses the `env =` ini block
 httpx==0.28.1
 boto3==1.43.29
 paho-mqtt==2.1.0
+
+# ── AI Assistant ──────────────────────────────────────────────────────────────
+google-genai==0.3.0

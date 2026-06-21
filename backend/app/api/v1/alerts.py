@@ -7,10 +7,11 @@ Alert history routes — paginated log of threshold-breach events.
       ?limit=20&offset=0&severity=WARNING|CRITICAL&metric=temperature_c
 """
 
+from datetime import datetime, timezone
 import logging
 import uuid
 
-from fastapi import APIRouter, Query
+from fastapi import APIRouter, Query, HTTPException, status
 from sqlalchemy import func, select
 
 from app.api.deps import CurrentUser, DbSession
@@ -83,3 +84,40 @@ async def list_alerts(
         offset=offset,
         items=[AlertEventOut.model_validate(item) for item in items],
     )
+
+
+@router.post(
+    "/devices/{device_id}/alerts/{alert_id}/acknowledge",
+    response_model=AlertEventOut,
+    summary="Acknowledge an alert",
+)
+async def acknowledge_alert(
+    device_id: uuid.UUID,
+    alert_id: uuid.UUID,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> AlertEventOut:
+    """
+    Mark an alert as acknowledged.
+    """
+    await device_access.assert_device_member(db, device_id, current_user.id)
+
+    result = await db.execute(
+        select(AlertEvent)
+        .where(AlertEvent.id == alert_id, AlertEvent.device_id == device_id)
+    )
+    alert = result.scalar_one_or_none()
+    
+    if not alert:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Alert not found",
+        )
+        
+    if not alert.acknowledged:
+        alert.acknowledged = True
+        alert.acknowledged_at = datetime.now(timezone.utc)
+        await db.commit()
+        await db.refresh(alert)
+        
+    return AlertEventOut.model_validate(alert)

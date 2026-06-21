@@ -4,32 +4,33 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
+  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        background: '#FBFBFA', // Soft off-white
-        surface: '#FFFFFF', // Pure white for cards
+        background: 'var(--bg-main)',
+        surface: 'var(--bg-surface)',
         primary: {
-          light: '#A5C9A5',
-          DEFAULT: '#8FBC8F', // Sage green
-          dark: '#689B68',
+          light: 'var(--color-primary-light)',
+          DEFAULT: 'var(--color-primary)',
+          dark: 'var(--color-primary-dark)',
         },
         emerald: {
-          light: '#4CB580',
-          DEFAULT: '#2E8B57', // Leafy emerald
-          dark: '#1E5E3A',
+          light: 'var(--color-emerald-light)',
+          DEFAULT: 'var(--color-emerald)',
+          dark: 'var(--color-emerald-dark)',
         },
         text: {
-          primary: '#2F4F4F', // Deep charcoal
-          secondary: '#556B6B',
-          muted: '#8F9B9B',
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          muted: 'var(--text-muted)',
         },
         alert: {
-          bg: '#FDF3F1',
-          DEFAULT: '#E27D60', // Terracotta warning
-          dark: '#C86144',
+          bg: 'var(--alert-bg)',
+          DEFAULT: 'var(--alert-main)',
+          dark: 'var(--alert-dark)',
         },
-        border: 'rgba(47, 79, 79, 0.08)',
+        border: 'var(--border-color)',
       },
       fontFamily: {
         sans: ['Inter', 'system-ui', 'sans-serif'],

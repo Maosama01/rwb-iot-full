@@ -107,7 +107,7 @@ async def test_ota_no_current_version_defaults_to_update(
 async def test_ota_unauthorized(async_client: AsyncClient, paired_device: dict):
     device_id = paired_device["device_id"]
     r = await async_client.get(f"/api/v1/devices/{device_id}/ota")
-    assert r.status_code == 403
+    assert r.status_code == 401
 
 
 @pytest.mark.asyncio
@@ -121,7 +121,7 @@ async def test_ota_wrong_owner(
     # Register a second user
     r = await async_client.post(
         "/api/v1/auth/register",
-        json={"email": "other@rawbin.io", "password": "Other123!", "display_name": "Other"},
+        json={"email": "other@rawbin.io", "password": "Other123!", "display_name": "Other", "phone": "+14155550002"},
     )
     other_token = r.json()["tokens"]["access_token"]
     other_headers = {"Authorization": f"Bearer {other_token}"}

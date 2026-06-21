@@ -32,6 +32,8 @@ from app.api.v1 import (
     telemetry,
     users,
     waste,
+    analytics,
+    ai,
 )
 from app.core.config import get_settings
 from app.core.logging import configure_logging
@@ -74,9 +76,19 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     await redis.ping()
     logger.info("Redis connection OK.")
 
+    import asyncio
+    from app.services.demo_simulator import run_demo_simulator
+    demo_task = asyncio.create_task(run_demo_simulator())
+
     yield  # ── application runs here ──────────────────────────────────────
 
     logger.info("Shutting down — closing connections…")
+    demo_task.cancel()
+    try:
+        await demo_task
+    except asyncio.CancelledError:
+        pass
+
     await engine.dispose()
     await redis.aclose()
     logger.info("Shutdown complete.")
@@ -121,6 +133,8 @@ def create_app() -> FastAPI:
     app.include_router(ota.router, prefix=API_PREFIX)
     app.include_router(cycles.router, prefix=API_PREFIX)
     app.include_router(waste.router, prefix=API_PREFIX)
+    app.include_router(analytics.router, prefix=API_PREFIX)
+    app.include_router(ai.router, prefix=API_PREFIX)
 
     # ── Health check (ECS / ALB target group health probe) ───────────────────
     @app.get("/health", tags=["Infra"], include_in_schema=False)

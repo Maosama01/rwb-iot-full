@@ -199,6 +199,66 @@ async def provision_device_secret(
 
 # ── Listing & sharing ─────────────────────────────────────────────────────────
 
+@router.post(
+    "/demo",
+    response_model=DeviceResponse,
+    status_code=status.HTTP_201_CREATED,
+    summary="Create a pre-paired demo device for the user",
+)
+async def create_demo_device(
+    current_user: CurrentUser,
+    db: DbSession,
+) -> DeviceResponse:
+    """Creates a demo device already paired to the caller."""
+    device = Device(
+        hardware_uid=f"DEMO-{secrets.token_hex(4).upper()}",
+        display_name="Demo Composter",
+        device_secret_enc=encrypt_device_secret("DEMO_SECRET"),
+        is_paired=True,
+    )
+    db.add(device)
+    await db.flush()
+    await device_access.add_member(db, device.id, current_user.id, is_owner=True)
+
+    # Insert 24 hours of mock telemetry for the demo device
+    import random
+    from app.db.models.sensor_reading import SensorReading
+    from sqlalchemy.ext.asyncio import create_async_engine
+    from sqlalchemy import text
+
+    now = datetime.now(timezone.utc)
+    readings = []
+    # 24 hours of data, one point per hour
+    for i in range(24, -1, -1):
+        t = now - timedelta(hours=i)
+        readings.append(
+            SensorReading(
+                time=t,
+                device_id=device.id,
+                temperature_c=random.uniform(40.0, 60.0),
+                humidity_pct=random.uniform(50.0, 70.0),
+                co2_ppm=random.uniform(400.0, 1000.0),
+                ph_level=random.uniform(6.0, 8.0),
+                ambient_temp_c=25.0,
+                fan_speed_rpm=random.randint(800, 1500),
+                fill_level_pct=random.uniform(20.0, 80.0),
+                weight_kg=random.uniform(10.0, 50.0),
+                firmware_version="DEMO-1.0.0"
+            )
+        )
+    db.add_all(readings)
+    await db.commit()
+
+    # Refresh continuous aggregates outside the transaction
+    engine = create_async_engine(str(settings.DATABASE_URL), isolation_level="AUTOCOMMIT")
+    async with engine.connect() as conn:
+        await conn.execute(text("CALL refresh_continuous_aggregate('sensor_readings_hourly', NULL, NULL);"))
+    await engine.dispose()
+
+    logger.info("Demo device created with mock telemetry", extra={"device_id": str(device.id), "user_id": str(current_user.id)})
+    return device
+
+
 @router.get(
     "/",
     response_model=list[DeviceResponse],

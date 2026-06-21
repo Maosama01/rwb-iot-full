@@ -16,7 +16,7 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<any>(null);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
 
   const fetchUser = useCallback(async () => {
     const tokens = api.getTokens();
@@ -46,9 +46,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   };
 
   const register = async (data: any) => {
-    const result = await api.register(data);
-    api.setTokens(result.tokens);
-    setUser(result.user);
+    await api.register(data);
   };
 
   const requestOtp = async (phone: string) => {

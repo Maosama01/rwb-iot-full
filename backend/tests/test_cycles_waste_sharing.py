@@ -13,7 +13,7 @@ from httpx import AsyncClient
 async def _register(async_client: AsyncClient, email: str) -> dict:
     resp = await async_client.post(
         "/api/v1/auth/register",
-        json={"email": email, "password": "SharePass123!", "display_name": email.split("@")[0]},
+        json={"email": email, "password": "SharePass123!", "display_name": email.split("@")[0], "phone": f"+1415555{abs(hash(email)) % 10000:04d}"},
     )
     assert resp.status_code == 201, resp.text
     return resp.json()

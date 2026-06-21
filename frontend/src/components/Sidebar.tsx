@@ -6,13 +6,20 @@ import {
   BellRing, 
   Settings, 
   LogOut,
-  Leaf
+  Leaf,
+  BarChart2,
+  Moon,
+  Sun,
+  Scale,
+  Plus
 } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
+import { useTheme } from '../context/ThemeContext';
 import ConfirmModal from './ConfirmModal';
 
 const Sidebar: React.FC = () => {
   const { logout } = useAuth();
+  const { theme, toggleTheme } = useTheme();
   const navigate = useNavigate();
   const [showSignOutConfirm, setShowSignOutConfirm] = useState(false);
 
@@ -23,9 +30,11 @@ const Sidebar: React.FC = () => {
 
   const navItems = [
     { name: 'Dashboard', icon: LayoutDashboard, path: '/dashboard', end: true },
-    { name: 'Analytics', icon: Activity, path: '/dashboard/compost', end: false },
+    { name: 'Compost', icon: Activity, path: '/dashboard/compost', end: false },
+    { name: 'Waste Log', icon: Scale, path: '/dashboard/waste', end: false },
+    { name: 'Analytics', icon: BarChart2, path: '/dashboard/analytics', end: false },
     { name: 'Alerts', icon: BellRing, path: '/dashboard/alerts', end: false },
-    { name: 'Settings', icon: Settings, path: '/dashboard/settings', end: false },
+    { name: 'Settings', icon: Settings, path: '/dashboard/device-settings', end: false },
   ];
 
   return (
@@ -55,9 +64,33 @@ const Sidebar: React.FC = () => {
             <span className="text-[10px] md:text-base md:inline">{item.name}</span>
           </NavLink>
         ))}
+        
+        <NavLink
+          to="/dashboard/setup"
+          className={({ isActive }) =>
+            `hidden md:flex flex-row items-center justify-start gap-3 px-4 py-3 rounded-2xl font-bold mt-4 border-2 border-dashed transition-all duration-200 ${
+              isActive
+                ? 'border-emerald bg-emerald/10 text-emerald'
+                : 'border-emerald/30 text-emerald hover:bg-emerald/5 hover:border-emerald'
+            }`
+          }
+        >
+          <div className="bg-emerald text-white rounded-full p-1"><Plus size={16} /></div>
+          <span>Add New Rawbin</span>
+        </NavLink>
       </nav>
 
-      <div className="p-2 md:p-4 md:border-t border-border flex justify-center md:justify-start">
+      <div className="p-2 md:p-4 md:border-t border-border flex flex-col gap-2">
+        <button
+          onClick={toggleTheme}
+          className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 text-text-secondary hover:bg-background hover:text-emerald rounded-2xl transition-colors font-medium w-full"
+        >
+          {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+          <span className="text-[10px] md:text-base md:inline">
+            {theme === 'dark' ? 'Light Mode' : 'Dark Mode'}
+          </span>
+        </button>
+
         <button
           onClick={() => setShowSignOutConfirm(true)}
           className="flex flex-col md:flex-row items-center justify-center md:justify-start gap-1 md:gap-3 p-2 md:px-4 md:py-3 text-text-muted hover:text-alert hover:bg-alert-bg rounded-2xl transition-colors font-medium w-full"

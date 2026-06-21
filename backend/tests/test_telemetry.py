@@ -118,8 +118,9 @@ class TestDeviceSnapshot:
             "/api/v1/auth/register",
             json={
                 "email": "snapshot_b@rawbin.io",
-                "password": "SnapB123!Pass",
+                "password": "SharePass123!",
                 "display_name": "User B Snap",
+                "phone": "+14155550003",
             },
         )
         token_b = reg_b.json()["tokens"]["access_token"]
@@ -176,8 +177,9 @@ class TestTelemetryHistory:
             "/api/v1/auth/register",
             json={
                 "email": "hist_b@rawbin.io",
-                "password": "HistB123!Pass",
+                "password": "SharePass123!",
                 "display_name": "User B Hist",
+                "phone": "+14155552672",
             },
         )
         token_b = reg_b.json()["tokens"]["access_token"]

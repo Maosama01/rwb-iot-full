@@ -10,13 +10,17 @@ import {
   Activity,
   AlertTriangle,
   Leaf,
-  LayoutDashboard
+  LayoutDashboard,
+  Bell,
+  BellRing
 } from 'lucide-react';
 import { api } from '../api/client';
 import { useDevices } from '../context/DeviceContext';
 import TelemetryChart from '../components/TelemetryChart';
 import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import { useToast } from '../context/ToastContext';
+import { requestPushToken, onForegroundMessage } from '../firebase';
+import Skeleton from '../components/Skeleton';
 
 import PairingModal from '../components/PairingModal';
 
@@ -30,26 +34,66 @@ export default function DashboardPage() {
   const { devices, selectedDevice, selectDevice, refetchDevices } = useDevices();
   const { error, success } = useToast();
   const [telemetry, setTelemetry] = useState<any>(null);
-  const [interval, setInterval] = useState('hour');
+  const [latestData, setLatestData] = useState<any>(null);
+  const [chartInterval, setChartInterval] = useState('hour');
   const [loading, setLoading] = useState(false);
   const [isPairingModalOpen, setIsPairingModalOpen] = useState(false);
   const [showDeviceSelect, setShowDeviceSelect] = useState(false);
+  const [pushEnabled, setPushEnabled] = useState(false);
+
+  useEffect(() => {
+    const unsubscribe = onForegroundMessage((payload) => {
+      success(`New Alert: ${payload.notification?.title} - ${payload.notification?.body}`);
+    });
+    return () => unsubscribe();
+  }, [success]);
 
   useEffect(() => {
     if (!selectedDevice) return;
-    const fetchData = async () => {
+
+    const fetchInitial = async () => {
       setLoading(true);
       try {
-        const telData = await api.getTelemetryHistory(selectedDevice.id, interval);
+        const [telData, latest] = await Promise.all([
+          api.getTelemetryHistory(selectedDevice.id, chartInterval),
+          api.getLatestTelemetry(selectedDevice.id)
+        ]);
         setTelemetry(telData);
+        setLatestData(latest);
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
       } finally {
         setLoading(false);
       }
     };
-    fetchData();
-  }, [selectedDevice, interval]);
+
+    fetchInitial();
+
+    // Fast polling for live top widgets
+    const pollLatestInterval = window.setInterval(async () => {
+      try {
+        const latest = await api.getLatestTelemetry(selectedDevice.id);
+        setLatestData(latest);
+      } catch (err) {
+        console.error('Failed to poll latest telemetry:', err);
+      }
+    }, 5000);
+
+    // Slow polling for heavy historical charts
+    const pollHistoryInterval = window.setInterval(async () => {
+      try {
+        const telData = await api.getTelemetryHistory(selectedDevice.id, chartInterval);
+        setTelemetry(telData);
+      } catch (err) {
+        console.error('Failed to poll historical data:', err);
+      }
+    }, 60000);
+
+    return () => {
+      window.clearInterval(pollLatestInterval);
+      window.clearInterval(pollHistoryInterval);
+    };
+  }, [selectedDevice, chartInterval]);
 
   const handlePairDemo = async () => {
     try {
@@ -63,17 +107,31 @@ export default function DashboardPage() {
     }
   };
 
-  // Mock Data Fallback for Premium Feel
-  const rawLatest = telemetry?.readings?.length ? telemetry.readings[telemetry.readings.length - 1] : null;
+  const handleEnablePush = async () => {
+    try {
+      const token = await requestPushToken();
+      if (token) {
+        await api.updatePushToken(token);
+        setPushEnabled(true);
+        success('Push notifications enabled!');
+      } else {
+        error('Failed to enable push notifications (permission denied or no config in .env).');
+      }
+    } catch (err) {
+      error('Error setting up push notifications.');
+    }
+  };
+
+  // Live Data
   const latestReading = {
-    temperature_c: rawLatest?.temperature_c ?? rawLatest?.temperature_c_avg ?? 58.4,
-    ambient_temp_c: rawLatest?.ambient_temp_c ?? 24.1,
-    humidity_pct: rawLatest?.humidity_pct ?? rawLatest?.humidity_pct_avg ?? 68,
-    co2_ppm: rawLatest?.co2_ppm ?? rawLatest?.co2_ppm_avg ?? 850,
-    ph_level: rawLatest?.ph_level ?? rawLatest?.ph_level_avg ?? 6.8,
-    fill_level_pct: rawLatest?.fill_level_pct ?? 74,
-    weight_kg: rawLatest?.weight_kg ?? 14.2,
-    fan_speed_rpm: rawLatest?.fan_speed_rpm ?? rawLatest?.fan_speed_rpm_avg ?? 1200
+    temperature_c: latestData?.temperature_c ?? 58.4,
+    ambient_temp_c: latestData?.ambient_temp_c ?? 24.1,
+    humidity_pct: latestData?.humidity_pct ?? 68,
+    co2_ppm: latestData?.co2_ppm ?? 850,
+    ph_level: latestData?.ph_level ?? 6.8,
+    fill_level_pct: latestData?.fill_level_pct ?? 74,
+    weight_kg: latestData?.weight_kg ?? 14.2,
+    fan_speed_rpm: latestData?.fan_speed_rpm ?? 1200
   };
 
   const MetricCard = ({ title, value, unit, icon: Icon, trend, colorClass, isPercentage = false }: { title: string; value: string | number; unit: string; icon: any; trend?: string; colorClass: string; isPercentage?: boolean }) => (
@@ -84,14 +142,14 @@ export default function DashboardPage() {
           <Icon size={24} />
         </div>
         {trend && !loading && <span className="text-sm font-medium text-emerald bg-emerald/10 px-2 py-1 rounded-full">{trend}</span>}
-        {trend && loading && <div className="h-6 w-12 bg-border animate-pulse rounded-full"></div>}
+        {trend && loading && <Skeleton className="h-6 w-12" variant="circular" />}
       </div>
       <div className="z-10">
         <h3 className="text-text-secondary text-sm font-medium mb-1">{title}</h3>
         {loading ? (
           <div className="flex items-baseline gap-2 mt-1">
-            <div className="h-8 w-16 bg-border animate-pulse rounded-md"></div>
-            <div className="h-4 w-6 bg-border animate-pulse rounded-md"></div>
+            <Skeleton className="h-8 w-16" variant="text" />
+            <Skeleton className="h-4 w-6" variant="text" />
           </div>
         ) : (
           <div className="flex items-baseline gap-1">
@@ -102,7 +160,7 @@ export default function DashboardPage() {
         {isPercentage && (
           <div className="w-full bg-border rounded-full h-1.5 mt-4 overflow-hidden">
             {loading ? (
-              <div className="w-full h-full bg-background animate-pulse"></div>
+              <Skeleton className="w-full h-full" variant="rectangular" />
             ) : (
               <div className={`h-full ${colorClass.includes('emerald') ? 'bg-emerald' : 'bg-primary'}`} style={{ width: `${value}%` }}></div>
             )}
@@ -124,7 +182,15 @@ export default function DashboardPage() {
         </div>
         
         {devices.length > 0 && (
-          <div className="relative">
+          <div className="flex items-center gap-4 relative">
+            <button
+              onClick={handleEnablePush}
+              title="Enable Push Notifications"
+              className={`p-3 rounded-xl transition-all border ${pushEnabled ? 'bg-primary/10 border-primary/20 text-primary-dark' : 'bg-white border-border text-text-muted hover:text-primary'}`}
+            >
+              {pushEnabled ? <BellRing size={20} /> : <Bell size={20} />}
+            </button>
+
             <button 
               onClick={() => setShowDeviceSelect(!showDeviceSelect)}
               className="btn btn-secondary flex items-center gap-2 bg-white"
@@ -212,8 +278,8 @@ export default function DashboardPage() {
                 {INTERVALS.map((opt) => (
                   <button
                     key={opt.value}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${interval === opt.value ? 'bg-white shadow-organic-sm text-emerald-dark' : 'text-text-secondary hover:text-text-primary'}`}
-                    onClick={() => setInterval(opt.value)}
+                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${chartInterval === opt.value ? 'bg-white shadow-organic-sm text-emerald-dark' : 'text-text-secondary hover:text-text-primary'}`}
+                    onClick={() => setChartInterval(opt.value)}
                   >
                     {opt.label}
                   </button>
@@ -221,13 +287,13 @@ export default function DashboardPage() {
               </div>
             </div>
             {loading ? (
-              <div className="h-[400px] bg-background animate-pulse rounded-2xl w-full"></div>
+              <Skeleton className="h-[400px] w-full" variant="rectangular" />
             ) : (
               <WidgetErrorBoundary widgetName="Historical Analytics Chart">
                 <div className="h-[400px]">
                   <TelemetryChart
                     data={telemetry?.readings || []}
-                    interval={interval}
+                    interval={chartInterval}
                     metrics={['temperature', 'humidity', 'co2']}
                   />
                 </div>
