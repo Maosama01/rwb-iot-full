@@ -80,6 +80,15 @@ With the stack running, everything is immediately accessible from your browser:
 - The frontend is pre-configured to communicate with the local API at `localhost:8000`.
 - The **Hardware Simulator** is automatically publishing fake composter data. Once you log in and "pair" a device, you will instantly see live metrics!
 
+### 📱 Opening on Your Phone (Local Network Testing)
+To view and interact with the app on your mobile device:
+1. Ensure your phone and your computer are connected to the **same Wi-Fi network**.
+2. Find your computer's local IP address (e.g., `192.168.1.x` or `10.0.0.x`).
+    - On Mac: `System Settings > Network > Wi-Fi > Details`
+    - On Windows: Open Command Prompt and type `ipconfig` (look for "IPv4 Address").
+3. Open your phone's browser and go to: `http://<YOUR_LOCAL_IP>:3000`
+*(The app is configured to automatically route API calls to your computer's backend over the local network).*
+
 ### ⚙️ API Documentation
 - **URL**: [http://localhost:8000/docs](http://localhost:8000/docs)
 - Interactive Swagger UI for testing the FastAPI backend endpoints directly.
