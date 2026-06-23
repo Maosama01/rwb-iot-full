@@ -80,7 +80,7 @@ The frontend is a Progressive Web App (PWA) built using **React, Vite, and Tailw
 ### Root Configuration Files
 * **`package.json` & `package-lock.json`**: Lists all JavaScript dependencies (`react`, `tailwindcss`, etc.) and locks exact versions to ensure reproducible builds.
 * **`vite.config.ts`**: The Vite bundler configuration, including the PWA setup (allowing offline mobile installation).
-* **`tailwind.config.js`**: The master design file dictating the "Mill" aesthetic colors, fonts, and box shadows.
+* **`tailwind.config.js`**: The master design file dictating the "Rawbin" aesthetic colors, fonts, and box shadows.
 * **`postcss.config.js`**: Bridges Tailwind with standard CSS generation.
 * **`tsconfig.json` & `tsconfig.node.json`**: TypeScript configuration, enforcing strict typing to prevent runtime crashes.
 * **`eslint.config.js`**: Enforces code style and catches common JavaScript errors.

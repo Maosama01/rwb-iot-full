@@ -21,7 +21,7 @@ Welcome to **Rawbin**. This repository contains the complete software stack need
 
 The system runs entirely locally using **Docker Compose**, orchestrating a modern, event-driven microservices architecture:
 
-- 🎨 **Frontend (`frontend`)**: React + Vite SPA with a premium "Mill-like" glassmorphic aesthetic.
+- 🎨 **Frontend (`frontend`)**: React + Vite SPA with a premium "Rawbin-like" glassmorphic aesthetic.
 - ⚡ **API (`api`)**: FastAPI backend for device pairing, auth, and historical data.
 - 🗄️ **Database (`db`)**: PostgreSQL 16 + TimescaleDB for high-performance time-series sensor readings.
 - 🚀 **Cache & Broker (`redis`)**: Redis 7 for Celery message brokering and caching.

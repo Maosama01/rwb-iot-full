@@ -20,7 +20,7 @@ The central Progressive Web App (PWA) dashboard for monitoring and managing the 
 - **Data Visualization:** Recharts (Interactive area charts processing TimescaleDB aggregation).
 - **Icons:** Lucide React.
 
-## 🌿 The "Mill" Aesthetic Theme
+## 🌿 The "Rawbin" Aesthetic Theme
 The application strictly enforces a globally customized Light Mode to ensure a premium hardware-app feel:
 - **Backgrounds:** Soft off-white and pale cream (`bg-cream-50`).
 - **Accents:** Sage greens and leafy emeralds for healthy states (`text-leaf-600`).
