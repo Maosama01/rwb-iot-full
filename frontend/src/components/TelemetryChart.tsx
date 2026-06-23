@@ -5,7 +5,6 @@ import { format } from 'date-fns';
 const METRIC_CONFIG: Record<string, any> = {
   temperature: { key: 'temperature_c_avg', rawKey: 'temperature_c', color: '#E27D60', label: 'Temperature (°C)', yAxisId: 'left' },
   humidity: { key: 'humidity_pct_avg', rawKey: 'humidity_pct', color: '#8FBC8F', label: 'Humidity (%)', yAxisId: 'left' },
-  co2: { key: 'co2_ppm_avg', rawKey: 'co2_ppm', color: '#556B6B', label: 'CO₂ (ppm)', yAxisId: 'right' },
   ph: { key: 'ph_level_avg', rawKey: 'ph_level', color: '#2E8B57', label: 'pH Level', yAxisId: 'left' },
 };
 

@@ -16,7 +16,6 @@ export default function DeviceSettingsPage() {
   // Threshold form state
   const [tempMax, setTempMax] = useState('');
   const [tempMin, setTempMin] = useState('');
-  const [co2Max, setCo2Max] = useState('');
   const [humMin, setHumMin] = useState('');
   const [humMax, setHumMax] = useState('');
   const [phMin, setPhMin] = useState('');
@@ -28,6 +27,7 @@ export default function DeviceSettingsPage() {
   }, [selectedDevice]);
 
   const fetchSettings = async () => {
+    if (!selectedDevice) return;
     try {
       const [cfg, mem] = await Promise.all([
         api.getDeviceConfig(selectedDevice.id),
@@ -36,7 +36,6 @@ export default function DeviceSettingsPage() {
       setMembers(mem);
       setTempMax(cfg.temperature_c_max ?? '');
       setTempMin(cfg.temperature_c_min ?? '');
-      setCo2Max(cfg.co2_ppm_max ?? '');
       setHumMin(cfg.humidity_pct_min ?? '');
       setHumMax(cfg.humidity_pct_max ?? '');
       setPhMin(cfg.ph_min ?? '');
@@ -48,12 +47,12 @@ export default function DeviceSettingsPage() {
 
   const handleSaveConfig = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedDevice) return;
     setSaving(true);
     try {
       await api.updateDeviceConfig(selectedDevice.id, {
         temperature_c_max: parseFloat(tempMax) || null,
         temperature_c_min: parseFloat(tempMin) || null,
-        co2_ppm_max: parseFloat(co2Max) || null,
         humidity_pct_min: parseFloat(humMin) || null,
         humidity_pct_max: parseFloat(humMax) || null,
         ph_min: parseFloat(phMin) || null,
@@ -70,7 +69,7 @@ export default function DeviceSettingsPage() {
   const [sharing, setSharing] = useState(false);
 
   const handleShare = async () => {
-    if (!shareEmail) return;
+    if (!shareEmail || !selectedDevice) return;
     setSharing(true);
     try {
       const updated = await api.shareDevice(selectedDevice.id, shareEmail);
@@ -87,6 +86,7 @@ export default function DeviceSettingsPage() {
   const [removingId, setRemovingId] = useState<string | null>(null);
 
   const handleRemoveMember = async (userId: string) => {
+    if (!selectedDevice) return;
     setRemovingId(userId);
     try {
       await api.removeMember(selectedDevice.id, userId);
@@ -168,10 +168,6 @@ export default function DeviceSettingsPage() {
               <div className="flex flex-col gap-1.5">
                 <label className="text-text-secondary text-xs font-semibold uppercase tracking-wider">Humidity Max (%)</label>
                 <input type="number" step="0.1" className="input-field" value={humMax} onChange={(e) => setHumMax(e.target.value)} />
-              </div>
-              <div className="flex flex-col gap-1.5">
-                <label className="text-text-secondary text-xs font-semibold uppercase tracking-wider">CO₂ Max (ppm)</label>
-                <input type="number" step="1" className="input-field" value={co2Max} onChange={(e) => setCo2Max(e.target.value)} />
               </div>
             </div>
 

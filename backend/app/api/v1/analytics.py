@@ -3,7 +3,7 @@ import uuid
 from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Query
-from sqlalchemy import select, text
+from sqlalchemy import select, text, func
 
 from app.api.deps import CurrentUser, DbSession
 from app.db.models.device import Device
@@ -165,4 +165,32 @@ async def get_predictive_insights(
         ideal_temperature=ideal_temp,
         ideal_humidity=ideal_humidity,
         phase_started_at=active_cycle.started_at if active_cycle else None
+    )
+
+from app.schemas.analytics import CommunityImpactResponse
+from app.db.models.waste_log import WasteLog
+
+@router.get(
+    "/community-impact",
+    response_model=CommunityImpactResponse,
+    summary="Get global community impact metrics",
+)
+async def get_community_impact(
+    db: DbSession,
+) -> CommunityImpactResponse:
+    # Calculate sum of all waste logged
+    result = await db.execute(
+        select(func.sum(WasteLog.weight_kg))
+    )
+    total_weight = result.scalar() or 0.0
+
+    # Calculate number of distinct users who have logged waste
+    user_result = await db.execute(
+        select(func.count(func.distinct(WasteLog.user_id)))
+    )
+    total_users = user_result.scalar() or 0
+
+    return CommunityImpactResponse(
+        total_weight_kg=float(total_weight),
+        total_users=total_users,
     )

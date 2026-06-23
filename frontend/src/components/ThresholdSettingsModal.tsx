@@ -12,7 +12,6 @@ interface ThresholdSettingsModalProps {
 const DEFAULT_THRESHOLDS = {
   temperature_c_max: 65.0,
   temperature_c_min: 15.0,
-  co2_ppm_max: 2000.0,
   humidity_pct_min: 40.0,
   humidity_pct_max: 75.0,
   ph_min: 5.5,
@@ -149,23 +148,7 @@ export default function ThresholdSettingsModal({ isOpen, onClose, deviceId }: Th
                 </div>
               </div>
 
-              {/* CO2 */}
-              <div className="space-y-3">
-                <h3 className="font-semibold text-text-primary border-b border-border pb-2">CO₂ Concentration (ppm)</h3>
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="col-start-2">
-                    <label className="block text-xs font-medium text-text-secondary mb-1">Maximum</label>
-                    <input 
-                      type="number" 
-                      step="10"
-                      className="input-field" 
-                      placeholder={`Default: ${DEFAULT_THRESHOLDS.co2_ppm_max}`}
-                      value={config.co2_ppm_max ?? ''}
-                      onChange={(e) => handleChange('co2_ppm_max', e.target.value)}
-                    />
-                  </div>
-                </div>
-              </div>
+
 
               {/* pH Level */}
               <div className="space-y-3">

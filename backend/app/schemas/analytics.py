@@ -13,3 +13,7 @@ class PredictiveInsightsResponse(BaseModel):
     ideal_temperature: float
     ideal_humidity: float
     phase_started_at: datetime | None = None
+
+class CommunityImpactResponse(BaseModel):
+    total_weight_kg: float
+    total_users: int

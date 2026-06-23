@@ -39,13 +39,13 @@ export default function PredictiveInsightsCard({ deviceId }: { deviceId: string 
   if (loading) {
     return (
       <div className="organic-card p-6 border-border/50 h-[300px] flex flex-col justify-between">
-        <Skeleton variant="text" width="50%" height={32} className="mb-4" />
+        <Skeleton variant="text" className="w-1/2 h-8 mb-4" />
         <div className="flex gap-4">
-          <Skeleton variant="circular" width={120} height={120} />
-          <div className="flex-1 space-y-4">
-            <Skeleton variant="rectangular" height={20} />
-            <Skeleton variant="rectangular" height={20} />
-            <Skeleton variant="rectangular" height={20} />
+          <Skeleton variant="circular" className="w-[120px] h-[120px]" />
+          <div className="flex-1 space-y-4 flex flex-col justify-center">
+            <Skeleton variant="rectangular" className="h-5 w-full" />
+            <Skeleton variant="rectangular" className="h-5 w-5/6" />
+            <Skeleton variant="rectangular" className="h-5 w-4/6" />
           </div>
         </div>
       </div>

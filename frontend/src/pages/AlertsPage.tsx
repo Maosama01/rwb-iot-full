@@ -112,7 +112,6 @@ export default function AlertsPage() {
               <option value="">All Metrics</option>
               <option value="temperature_c">Temperature</option>
               <option value="humidity_pct">Humidity</option>
-              <option value="co2_ppm">CO₂</option>
               <option value="ph_level">pH</option>
             </select>
           </div>

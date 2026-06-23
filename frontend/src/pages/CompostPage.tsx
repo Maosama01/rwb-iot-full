@@ -23,6 +23,7 @@ export default function CompostPage() {
   }, [selectedDevice]);
 
   const fetchData = async () => {
+    if (!selectedDevice) return;
     try {
       const [c] = await Promise.all([
         api.listCycles(selectedDevice.id),
@@ -35,6 +36,7 @@ export default function CompostPage() {
 
   const handleCreateCycle = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!selectedDevice) return;
     setIsSubmittingCycle(true);
     try {
       await api.createCycle(selectedDevice.id, { label: cycleLabel, notes: cycleNotes });

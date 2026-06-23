@@ -330,6 +330,30 @@ class ApiClient {
       body: JSON.stringify(data),
     });
   }
+
+  // Community
+  async getCommunityImpact() {
+    return this.request(`/analytics/community-impact`);
+  }
+
+  // Plants & Garden
+  async listPlants() {
+    return this.request(`/plants`);
+  }
+
+  async createPlant(data: { name: string; plant_type: string }) {
+    return this.request(`/plants`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
+
+  async applyCompost(plantId: string, data: { compost_cycle_id?: string; amount_kg?: number; notes?: string }) {
+    return this.request(`/plants/${plantId}/applications`, {
+      method: 'POST',
+      body: JSON.stringify(data),
+    });
+  }
 }
 
 class ApiError extends Error {

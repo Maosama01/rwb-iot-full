@@ -22,8 +22,8 @@ export default function DeviceSetupPage() {
   const [wifiPassword, setWifiPassword] = useState('');
   
   const navigate = useNavigate();
-  const { fetchDevices } = useDevices();
-  const { showToast } = useToast();
+  const { refetchDevices } = useDevices();
+  const { success, error } = useToast();
 
   const handleStartScan = () => {
     setIsScanning(true);
@@ -51,18 +51,18 @@ export default function DeviceSetupPage() {
       // The device would connect to the internet, then we'd do the HMAC handshake.
       // Here we just use the demo endpoint.
       await api.createDemoDevice();
-      await fetchDevices(); // refresh device list
+      await refetchDevices(); // refresh device list
       setIsPairing(false);
       setStep(5); // Success
       
       // Auto redirect to dashboard after success
       setTimeout(() => {
-        showToast('success', 'New Rawbin paired successfully!');
+        success('New Rawbin paired successfully!');
         navigate('/dashboard');
       }, 3000);
     } catch (err: any) {
       setIsPairing(false);
-      showToast('error', err.message || 'Failed to pair device');
+      error(err.message || 'Failed to pair device');
       setStep(2); // Go back to wifi setup on failure
     }
   };

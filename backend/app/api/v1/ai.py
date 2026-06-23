@@ -8,6 +8,9 @@ from app.api.deps import CurrentUser, DbSession
 from app.services import device_access
 from sqlalchemy import select
 from app.db.models.sensor_reading import SensorReading
+from app.core.config import get_settings
+
+settings = get_settings()
 
 try:
     from google import genai
@@ -56,10 +59,16 @@ async def ask_assistant(
         "You are 'Rawbin AI', an expert eco-composting assistant. "
         "You help users optimize their smart composter health. "
         "Keep your answers concise, practical, and conversational. "
-        "Use the provided telemetry context to give personalized advice."
+        "Use the provided telemetry context to give personalized advice. "
+        "Important rules on what can be put in the Rawbin: "
+        "Users CAN put: fruit and veggie scraps, coffee grounds, eggshells, grains, and YES, they CAN put dairy products (like cheese or milk, though in moderation to avoid smell if it's too wet). "
+        "Users CANNOT put: large bones, metal, plastic, glass, pet waste, or synthetic materials. "
+        "CRITICAL: Understand and seamlessly process Hindi/Indian dish and vegetable names written in English (Hinglish) such as palak, bhindi, paneer, roti, dal, sabzi, karela, etc. Treat them just like their English equivalents. "
+        "SPELLING TOLERANCE: Be extremely forgiving with spelling mistakes. If a user misspells a food name (e.g., 'majhli' instead of 'machhli', 'panir' instead of 'paneer'), infer the most likely food item they meant and answer based on that. "
+        "When asked if an item can be composted, quickly say yes or no, and provide a short tip."
     )
     
-    api_key = os.environ.get("GEMINI_API_KEY")
+    api_key = settings.GEMINI_API_KEY
     if not has_genai or not api_key:
         # Mock fallback
         return AskResponse(answer=f"If I had an API key, I'd say: Based on your current temp ({latest.temperature_c if latest else 'unknown'}°C), your compost is looking great! (Provide GEMINI_API_KEY to enable real AI)")

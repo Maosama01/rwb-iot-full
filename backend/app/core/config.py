@@ -124,6 +124,9 @@ class Settings(BaseSettings):
     MQTT_USERNAME: str = "rawbin"
     MQTT_PASSWORD: str = "rawbin_mqtt_secret"
 
+    # ── Gemini API (AI Companion) ────────────────────────────────────────────
+    GEMINI_API_KEY: str = ""
+
 
 @lru_cache
 def get_settings() -> Settings:

@@ -1,49 +1,39 @@
 import { useState, useEffect } from 'react';
 import { 
-  Thermometer, 
-  Droplets, 
-  Wind, 
-  FlaskConical, 
   ChevronDown, 
-  Scale, 
-  Fan,
-  Activity,
-  AlertTriangle,
   Leaf,
-  LayoutDashboard,
   Bell,
-  BellRing
+  BellRing,
+  Sparkles,
+  Globe,
+  Trash2,
+  Calendar,
+  Play,
+  Square
 } from 'lucide-react';
 import { api } from '../api/client';
 import { useDevices } from '../context/DeviceContext';
-import TelemetryChart from '../components/TelemetryChart';
-import { WidgetErrorBoundary } from '../components/WidgetErrorBoundary';
 import { useToast } from '../context/ToastContext';
 import { requestPushToken, onForegroundMessage } from '../firebase';
 import Skeleton from '../components/Skeleton';
-
 import PairingModal from '../components/PairingModal';
-
-const INTERVALS = [
-  { value: 'raw', label: 'Raw (24h)' },
-  { value: 'hour', label: 'Hourly (7d)' },
-  { value: 'day', label: 'Daily (90d)' },
-];
+import AIChatWidget from '../components/AIChatWidget';
 
 export default function DashboardPage() {
   const { devices, selectedDevice, selectDevice, refetchDevices } = useDevices();
   const { error, success } = useToast();
-  const [telemetry, setTelemetry] = useState<any>(null);
   const [latestData, setLatestData] = useState<any>(null);
-  const [chartInterval, setChartInterval] = useState('hour');
   const [loading, setLoading] = useState(false);
   const [isPairingModalOpen, setIsPairingModalOpen] = useState(false);
   const [showDeviceSelect, setShowDeviceSelect] = useState(false);
   const [pushEnabled, setPushEnabled] = useState(false);
+  const [communityImpact, setCommunityImpact] = useState<any>(null);
+  const [activeCycle, setActiveCycle] = useState<any>(null);
+  const [cycleLoading, setCycleLoading] = useState(false);
 
   useEffect(() => {
     const unsubscribe = onForegroundMessage((payload) => {
-      success(`New Alert: ${payload.notification?.title} - ${payload.notification?.body}`);
+      success(`Alert: ${payload.notification?.title}`);
     });
     return () => unsubscribe();
   }, [success]);
@@ -54,12 +44,14 @@ export default function DashboardPage() {
     const fetchInitial = async () => {
       setLoading(true);
       try {
-        const [telData, latest] = await Promise.all([
-          api.getTelemetryHistory(selectedDevice.id, chartInterval),
-          api.getLatestTelemetry(selectedDevice.id)
+        const [latest, impact, cycles] = await Promise.all([
+          api.getLatestTelemetry(selectedDevice.id),
+          api.getCommunityImpact(),
+          api.listCycles(selectedDevice.id, 'active')
         ]);
-        setTelemetry(telData);
         setLatestData(latest);
+        setCommunityImpact(impact);
+        setActiveCycle(cycles?.[0] || null);
       } catch (err) {
         console.error('Failed to fetch dashboard data:', err);
       } finally {
@@ -69,7 +61,6 @@ export default function DashboardPage() {
 
     fetchInitial();
 
-    // Fast polling for live top widgets
     const pollLatestInterval = window.setInterval(async () => {
       try {
         const latest = await api.getLatestTelemetry(selectedDevice.id);
@@ -79,29 +70,18 @@ export default function DashboardPage() {
       }
     }, 5000);
 
-    // Slow polling for heavy historical charts
-    const pollHistoryInterval = window.setInterval(async () => {
-      try {
-        const telData = await api.getTelemetryHistory(selectedDevice.id, chartInterval);
-        setTelemetry(telData);
-      } catch (err) {
-        console.error('Failed to poll historical data:', err);
-      }
-    }, 60000);
-
     return () => {
       window.clearInterval(pollLatestInterval);
-      window.clearInterval(pollHistoryInterval);
     };
-  }, [selectedDevice, chartInterval]);
+  }, [selectedDevice]);
 
   const handlePairDemo = async () => {
     try {
       await api.createDemoDevice();
       await refetchDevices();
-      success('Demo device paired successfully');
+      success('Rawbin paired successfully!');
     } catch (err) {
-      error('Failed to pair demo device');
+      error('Failed to pair Rawbin');
     } finally {
       setIsPairingModalOpen(false);
     }
@@ -113,98 +93,92 @@ export default function DashboardPage() {
       if (token) {
         await api.updatePushToken(token);
         setPushEnabled(true);
-        success('Push notifications enabled!');
+        success('Notifications enabled!');
       } else {
-        error('Failed to enable push notifications (permission denied or no config in .env).');
+        error('Failed to enable notifications.');
       }
     } catch (err) {
-      error('Error setting up push notifications.');
+      error('Error setting up notifications.');
     }
   };
 
-  // Live Data
-  const latestReading = {
-    temperature_c: latestData?.temperature_c ?? 58.4,
-    ambient_temp_c: latestData?.ambient_temp_c ?? 24.1,
-    humidity_pct: latestData?.humidity_pct ?? 68,
-    co2_ppm: latestData?.co2_ppm ?? 850,
-    ph_level: latestData?.ph_level ?? 6.8,
-    fill_level_pct: latestData?.fill_level_pct ?? 74,
-    weight_kg: latestData?.weight_kg ?? 14.2,
-    fan_speed_rpm: latestData?.fan_speed_rpm ?? 1200
+  const handleToggleCycle = async () => {
+    if (!selectedDevice) return;
+    setCycleLoading(true);
+    try {
+      if (activeCycle) {
+        await api.updateCycle(activeCycle.id, { status: 'completed' });
+        setActiveCycle(null);
+        success('Cycle completed successfully!');
+      } else {
+        const cycle = await api.createCycle(selectedDevice.id, { label: 'Quick Cycle' });
+        setActiveCycle(cycle);
+        success('Cycle started!');
+      }
+    } catch (err: any) {
+      error(err?.message || 'Failed to toggle cycle');
+    } finally {
+      setCycleLoading(false);
+    }
   };
 
-  const MetricCard = ({ title, value, unit, icon: Icon, trend, colorClass, isPercentage = false }: { title: string; value: string | number; unit: string; icon: any; trend?: string; colorClass: string; isPercentage?: boolean }) => (
-    <div className="organic-card p-6 flex flex-col gap-4 relative overflow-hidden group">
-      <div className={`absolute top-0 right-0 w-24 h-24 bg-gradient-to-bl from-${colorClass}/20 to-transparent rounded-bl-full opacity-50 group-hover:opacity-100 transition-opacity`}></div>
-      <div className="flex items-center justify-between z-10">
-        <div className={`p-3 rounded-2xl ${colorClass.includes('emerald') ? 'bg-emerald/10 text-emerald' : colorClass.includes('alert') ? 'bg-alert/10 text-alert' : 'bg-primary/10 text-primary-dark'}`}>
-          <Icon size={24} />
-        </div>
-        {trend && !loading && <span className="text-sm font-medium text-emerald bg-emerald/10 px-2 py-1 rounded-full">{trend}</span>}
-        {trend && loading && <Skeleton className="h-6 w-12" variant="circular" />}
-      </div>
-      <div className="z-10">
-        <h3 className="text-text-secondary text-sm font-medium mb-1">{title}</h3>
-        {loading ? (
-          <div className="flex items-baseline gap-2 mt-1">
-            <Skeleton className="h-8 w-16" variant="text" />
-            <Skeleton className="h-4 w-6" variant="text" />
-          </div>
-        ) : (
-          <div className="flex items-baseline gap-1">
-            <span className="text-3xl font-bold text-text-primary">{value}</span>
-            <span className="text-text-muted font-medium">{unit}</span>
-          </div>
-        )}
-        {isPercentage && (
-          <div className="w-full bg-border rounded-full h-1.5 mt-4 overflow-hidden">
-            {loading ? (
-              <Skeleton className="w-full h-full" variant="rectangular" />
-            ) : (
-              <div className={`h-full ${colorClass.includes('emerald') ? 'bg-emerald' : 'bg-primary'}`} style={{ width: `${value}%` }}></div>
-            )}
-          </div>
-        )}
-      </div>
-    </div>
-  );
+  // Live Data defaults for display
+  const latestReading = {
+    temperature_c: latestData?.temperature_c ?? 58.4,
+    humidity_pct: latestData?.humidity_pct ?? 68,
+    fill_level_pct: latestData?.fill_level_pct ?? 74,
+    weight_kg: latestData?.weight_kg ?? 14.2,
+  };
+
+  // Determine compost status
+  let statusText = "Rawbin is happily composting! 🌱";
+  let statusColor = "bg-leaf-100 text-leaf-900";
+  if (latestReading.temperature_c < 30) {
+    statusText = "Warming up the compost bed ☀️";
+    statusColor = "bg-cream-100 text-compost-900";
+  } else if (latestReading.temperature_c > 70) {
+    statusText = "Running a bit hot! Cooling down 💨";
+    statusColor = "bg-[#FFF5F3] text-terracotta-500";
+  } else if (latestReading.humidity_pct < 40) {
+    statusText = "A bit dry! Add some food scraps 🍎";
+    statusColor = "bg-cream-100 text-compost-900";
+  }
 
   return (
-    <div className="animate-fade-in">
-      {/* Ecosystem Header */}
-      <div className="flex justify-between items-end mb-8">
+    <div className="animate-fade-in max-w-4xl mx-auto">
+      {/* Friendly Header */}
+      <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-4xl font-bold text-text-primary tracking-tight mb-2 flex items-center gap-3">
-            Ecosystem <Leaf className="text-primary-dark" size={32} />
+          <h1 className="text-4xl font-serif font-bold text-compost-900 tracking-tight mb-1">
+            Today
           </h1>
-          <p className="text-text-secondary font-medium">All devices operating within optimal composting parameters.</p>
+          <p className="text-compost-500 font-medium">Here's how your compost is doing.</p>
         </div>
         
         {devices.length > 0 && (
-          <div className="flex items-center gap-4 relative">
+          <div className="flex items-center gap-3 relative">
             <button
               onClick={handleEnablePush}
-              title="Enable Push Notifications"
-              className={`p-3 rounded-xl transition-all border ${pushEnabled ? 'bg-primary/10 border-primary/20 text-primary-dark' : 'bg-white border-border text-text-muted hover:text-primary'}`}
+              title="Enable Notifications"
+              className={`p-3.5 rounded-full transition-all ${pushEnabled ? 'bg-leaf-100 text-leaf-900' : 'bg-white border border-border text-compost-500 hover:text-leaf-600'}`}
             >
               {pushEnabled ? <BellRing size={20} /> : <Bell size={20} />}
             </button>
 
             <button 
               onClick={() => setShowDeviceSelect(!showDeviceSelect)}
-              className="btn btn-secondary flex items-center gap-2 bg-white"
+              className="btn btn-secondary bg-white rounded-full px-5 flex items-center gap-2"
             >
-              <div className="w-2 h-2 rounded-full bg-emerald"></div>
-              {selectedDevice?.display_name || 'Select Device'}
-              <ChevronDown size={18} className="text-text-muted" />
+              <div className="w-2.5 h-2.5 rounded-full bg-leaf-400"></div>
+              <span className="hidden sm:inline">{selectedDevice?.display_name || 'My Rawbin'}</span>
+              <ChevronDown size={18} className="text-compost-500" />
             </button>
             {showDeviceSelect && (
               <div className="absolute right-0 top-full mt-2 w-48 organic-card p-2 z-50">
                 {devices.map(d => (
                   <button
                     key={d.id}
-                    className="w-full text-left px-4 py-2 rounded-xl text-sm font-medium hover:bg-background text-text-primary"
+                    className="w-full text-left px-4 py-3 rounded-2xl text-sm font-medium hover:bg-cream-50 text-compost-900"
                     onClick={() => { selectDevice(d); setShowDeviceSelect(false); }}
                   >
                     {d.display_name}
@@ -216,91 +190,134 @@ export default function DashboardPage() {
         )}
       </div>
 
-      {/* Aggregate Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-12">
-        <div className="organic-card p-8 flex items-center gap-6 bg-gradient-to-r from-emerald/10 to-transparent border-emerald/20">
-          <div className="p-4 bg-emerald/20 rounded-2xl text-emerald-dark">
-            <Scale size={32} />
-          </div>
-          <div>
-            <p className="text-text-secondary font-medium mb-1">Total Compost Processed</p>
-            <h2 className="text-4xl font-bold text-text-primary">14.2 <span className="text-xl text-text-muted">kg</span></h2>
-          </div>
-        </div>
-        <div className="organic-card p-8 flex items-center gap-6 bg-gradient-to-r from-alert/10 to-transparent border-alert/20">
-          <div className="p-4 bg-alert/20 rounded-2xl text-alert">
-            <AlertTriangle size={32} />
-          </div>
-          <div>
-            <p className="text-text-secondary font-medium mb-1">Active Alerts</p>
-            <h2 className="text-4xl font-bold text-text-primary">0 <span className="text-xl text-text-muted">Issues</span></h2>
-          </div>
-        </div>
-      </div>
-
       {!selectedDevice ? (
-        <div className="organic-card p-16 text-center flex flex-col items-center justify-center border-dashed border-2">
-          <div className="p-6 bg-background rounded-full text-text-muted mb-6">
-            <Thermometer size={48} strokeWidth={1.5} />
+        <div className="organic-card p-12 md:p-16 text-center flex flex-col items-center justify-center border-dashed border-2 border-border/50 bg-cream-50/50">
+          <div className="p-6 bg-white shadow-organic-sm rounded-full text-leaf-600 mb-6">
+            <Leaf size={48} strokeWidth={1.5} />
           </div>
-          <h3 className="text-2xl font-bold text-text-primary mb-2">No Devices Paired</h3>
-          <p className="text-text-secondary max-w-md mx-auto mb-8">
-            Connect your first Rawbin smart composter to start tracking your sustainability impact in real-time.
+          <h3 className="text-2xl font-serif font-bold text-compost-900 mb-3">Welcome to Rawbin</h3>
+          <p className="text-compost-500 max-w-sm mx-auto mb-8 leading-relaxed">
+            Connect your first Rawbin smart composter to start turning food scraps into rich soil effortlessly.
           </p>
-          <button onClick={() => setIsPairingModalOpen(true)} className="btn btn-primary px-8">
-            Pair Hardware Device
+          <button onClick={() => setIsPairingModalOpen(true)} className="btn btn-primary px-8 text-lg py-4">
+            Connect My Rawbin
           </button>
         </div>
       ) : (
-        <>
-          {/* Live Telemetry Grid (8 Metrics) */}
-          <h2 className="text-2xl font-bold text-text-primary mb-6 flex items-center gap-2">
-            <Activity className="text-primary-dark" /> Live Telemetry
-          </h2>
-          <WidgetErrorBoundary widgetName="Live Telemetry">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-12">
-              <MetricCard title="Internal Temp" value={latestReading.temperature_c.toFixed(1)} unit="°C" icon={Thermometer} trend="+1.2°" colorClass="text-alert" />
-              <MetricCard title="Ambient Temp" value={latestReading.ambient_temp_c.toFixed(1)} unit="°C" icon={Thermometer} colorClass="text-emerald" />
-              <MetricCard title="Moisture Level" value={latestReading.humidity_pct.toFixed(0)} unit="%" icon={Droplets} isPercentage colorClass="text-primary" />
-              <MetricCard title="CO₂ Concentration" value={latestReading.co2_ppm.toFixed(0)} unit="ppm" icon={Wind} colorClass="text-text-secondary" />
-              <MetricCard title="pH Level" value={latestReading.ph_level.toFixed(1)} unit="pH" icon={FlaskConical} colorClass="text-primary" />
-              <MetricCard title="Fill Level" value={latestReading.fill_level_pct.toFixed(0)} unit="%" icon={LayoutDashboard} isPercentage colorClass="text-emerald" />
-              <MetricCard title="Bin Weight" value={latestReading.weight_kg.toFixed(1)} unit="kg" icon={Scale} colorClass="text-text-primary" />
-              <MetricCard title="Aeration Fan" value={latestReading.fan_speed_rpm.toFixed(0)} unit="RPM" icon={Fan} colorClass="text-emerald" />
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
+          {/* Main Content Column */}
+          <div className="lg:col-span-7 space-y-6">
+            
+            {/* Quick Action Buttons (Lomi Style) */}
+            <div className="grid grid-cols-1 gap-4">
+              <button 
+                onClick={handleToggleCycle}
+                disabled={cycleLoading}
+                className={`organic-card p-6 flex flex-col items-center justify-center text-center group transition-all duration-500 ease-spring active:scale-95 hover:scale-[1.02] border border-border/50 shadow-organic-sm ${activeCycle ? 'hover:bg-amber-600 hover:text-white hover:border-amber-600' : 'hover:bg-leaf-600 hover:text-white hover:border-leaf-600'}`}
+              >
+                <div className={`relative w-16 h-16 flex items-center justify-center rounded-full mb-3 transition-all duration-500 ${activeCycle ? 'bg-amber-100 text-amber-600 group-hover:bg-white/20 group-hover:text-white' : 'bg-leaf-100 text-leaf-600 group-hover:bg-white/20 group-hover:text-white'}`}>
+                  {cycleLoading ? (
+                    <div className="w-7 h-7 border-4 border-current border-t-transparent rounded-full animate-spin"></div>
+                  ) : (
+                    <>
+                      <div className={`absolute transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${activeCycle ? 'opacity-0 scale-50 rotate-90' : 'opacity-100 scale-100 rotate-0'}`}>
+                        <Play fill="currentColor" size={28} />
+                      </div>
+                      <div className={`absolute transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${activeCycle ? 'opacity-100 scale-100 rotate-0' : 'opacity-0 scale-150 -rotate-90'}`}>
+                        <Square fill="currentColor" size={28} />
+                      </div>
+                    </>
+                  )}
+                </div>
+                <div className="relative h-7 w-full flex items-center justify-center overflow-hidden">
+                  <span className={`absolute font-bold text-xl transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${activeCycle ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'} group-hover:text-white text-compost-900`}>
+                    Start Cycle
+                  </span>
+                  <span className={`absolute font-bold text-xl transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${activeCycle ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'} group-hover:text-white text-compost-900`}>
+                    Complete Cycle
+                  </span>
+                </div>
+                <div className="relative h-5 w-full flex items-center justify-center mt-1 overflow-hidden">
+                  <span className={`absolute text-sm font-medium transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${activeCycle ? '-translate-y-full opacity-0' : 'translate-y-0 opacity-100'} text-compost-500 group-hover:text-white/90`}>
+                    Ready to start
+                  </span>
+                  <span className={`absolute text-sm font-medium transition-all duration-500 ease-[cubic-bezier(0.34,1.56,0.64,1)] ${activeCycle ? 'translate-y-0 opacity-100' : 'translate-y-full opacity-0'} text-amber-600 group-hover:text-white/90`}>
+                    A cycle is currently running
+                  </span>
+                </div>
+              </button>
             </div>
-          </WidgetErrorBoundary>
 
-          {/* Historical Analytics */}
-          <div className="organic-card p-8 mb-8">
-            <div className="flex justify-between items-center mb-8">
-              <h2 className="text-2xl font-bold text-text-primary">Historical Analytics</h2>
-              <div className="flex bg-background p-1 rounded-xl border border-border">
-                {INTERVALS.map((opt) => (
-                  <button
-                    key={opt.value}
-                    className={`px-4 py-2 rounded-lg text-sm font-medium transition-all ${chartInterval === opt.value ? 'bg-white shadow-organic-sm text-emerald-dark' : 'text-text-secondary hover:text-text-primary'}`}
-                    onClick={() => setChartInterval(opt.value)}
-                  >
-                    {opt.label}
-                  </button>
-                ))}
+            {/* Impact Card (Trash Bag Metaphor) */}
+            <div className="organic-card p-8 bg-gradient-to-br from-[#EAF4F4] to-white border border-border/50 text-center relative overflow-hidden">
+              <div className="absolute top-0 right-0 p-6 opacity-10">
+                <Leaf size={120} />
+              </div>
+              
+              <h3 className="text-2xl font-serif font-bold text-compost-900 mb-2 relative z-10">My Impact</h3>
+              <p className="text-compost-500 font-medium relative z-10">Every cycle keeps food out of landfills.</p>
+              
+              <div className="relative w-56 h-56 mx-auto my-8 flex items-center justify-center relative z-10">
+                <svg viewBox="0 0 100 100" className="w-full h-full transform -rotate-90 drop-shadow-sm">
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="text-leaf-100" />
+                  <circle cx="50" cy="50" r="45" fill="none" stroke="currentColor" strokeWidth="8" className="text-leaf-600 transition-all duration-1000 ease-out" strokeDasharray={`${2 * Math.PI * 45}`} strokeDashoffset={`${2 * Math.PI * 45 * (1 - Math.min(100, (latestReading.weight_kg / 20) * 100) / 100)}`} strokeLinecap="round" />
+                </svg>
+                <div className="absolute inset-0 flex flex-col items-center justify-center">
+                   <div className="bg-compost-800 text-white p-3 rounded-full mb-1 opacity-90 shadow-md">
+                     <Trash2 size={32} />
+                   </div>
+                   <span className="text-2xl font-bold text-compost-900 mt-1">
+                     {Math.round(Math.min(100, (latestReading.weight_kg / 20) * 100))}%
+                   </span>
+                </div>
+              </div>
+
+              <p className="text-compost-600 font-medium relative z-10 text-lg">
+                until my next trash bag saved
+              </p>
+
+              <div className="grid grid-cols-2 gap-4 mt-8 pt-6 border-t border-border/50 relative z-10">
+                 <div>
+                   <p className="text-3xl font-bold text-leaf-900">
+                     {loading ? <Skeleton className="w-16 h-8 mx-auto" variant="text" /> : latestReading.weight_kg.toFixed(1)} <span className="text-lg">kg</span>
+                   </p>
+                   <p className="text-sm font-medium text-compost-500 mt-1">waste saved</p>
+                 </div>
+                 <div>
+                   <p className="text-3xl font-bold text-compost-900">
+                     {loading ? <Skeleton className="w-12 h-8 mx-auto" variant="text" /> : '12'}
+                   </p>
+                   <p className="text-sm font-medium text-compost-500 mt-1">cycles completed</p>
+                 </div>
               </div>
             </div>
-            {loading ? (
-              <Skeleton className="h-[400px] w-full" variant="rectangular" />
-            ) : (
-              <WidgetErrorBoundary widgetName="Historical Analytics Chart">
-                <div className="h-[400px]">
-                  <TelemetryChart
-                    data={telemetry?.readings || []}
-                    interval={chartInterval}
-                    metrics={['temperature', 'humidity', 'co2']}
-                  />
+
+            {/* Global Community Impact */}
+            {communityImpact && (
+              <div className="organic-card p-6 bg-cream-50 border-border">
+                <div className="flex items-center gap-4">
+                  <div className="bg-[#4299E1]/10 p-4 rounded-full text-[#4299E1] shrink-0">
+                    <Globe size={28} />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="text-lg font-bold text-compost-900 flex items-center gap-2">
+                      Global Impact
+                    </h3>
+                    <p className="text-sm text-compost-500 font-medium leading-tight mt-1">
+                      Together, the Rawbin community of <span className="font-bold text-compost-900">{communityImpact.total_users}</span> users has diverted <span className="font-bold text-leaf-600">{communityImpact.total_weight_kg.toFixed(1)}kg</span> of waste!
+                    </p>
+                  </div>
                 </div>
-              </WidgetErrorBoundary>
+              </div>
             )}
+
           </div>
-        </>
+
+          {/* Right Column (Ask Rawbin AI) */}
+          <div className="lg:col-span-5 h-[500px] lg:h-auto hidden md:block">
+            <AIChatWidget inline={true} />
+          </div>
+        </div>
       )}
 
       <PairingModal 

@@ -4,90 +4,69 @@
 
 @layer base {
   :root {
-    --bg-main: #FBFBFA;
-    --bg-surface: #FFFFFF;
+    color-scheme: light;
+    --cream-50: #FAFAF9; /* crisper off-white */
+    --cream-100: #F5F5F4;
+    --linen-0: #FFFFFF;
     
-    --color-primary-light: #A5C9A5;
-    --color-primary: #8FBC8F;
-    --color-primary-dark: #689B68;
+    --compost-500: #78716C;
+    --compost-700: #44403C;
+    --compost-900: #1C1917; /* much darker for premium contrast */
     
-    --color-emerald-light: #4CB580;
-    --color-emerald: #2E8B57;
-    --color-emerald-dark: #1E5E3A;
+    --leaf-100: #D1FAE5;
+    --leaf-400: #34D399;
+    --leaf-600: #059669; /* deeper, cleaner tech green */
+    --leaf-900: #064E3B;
     
-    --text-primary: #2F4F4F;
-    --text-secondary: #556B6B;
-    --text-muted: #8F9B9B;
+    --terracotta-500: #EF4444;
     
-    --alert-bg: #FDF3F1;
-    --alert-main: #E27D60;
-    --alert-dark: #C86144;
-    
-    --border-color: rgba(47, 79, 79, 0.08);
+    --border-color: rgba(28, 25, 23, 0.08);
   }
 
-  .dark {
-    --bg-main: #161816;
-    --bg-surface: #1E201E;
-    
-    --color-primary-light: #8DAA8D;
-    --color-primary: #759B75;
-    --color-primary-dark: #4F754F;
-    
-    --color-emerald-light: #3A9666;
-    --color-emerald: #2E8B57;
-    --color-emerald-dark: #1E5E3A;
-    
-    --text-primary: #E8ECE8;
-    --text-secondary: #A0ABA0;
-    --text-muted: #6C7A7A;
-    
-    --alert-bg: #382420;
-    --alert-main: #D96A4A;
-    --alert-dark: #E27D60;
-    
-    --border-color: rgba(255, 255, 255, 0.08);
+  html {
+    scroll-behavior: smooth;
   }
 
   body {
-    @apply bg-background text-text-primary antialiased transition-colors duration-300;
-    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    @apply text-text-primary bg-background antialiased transition-colors duration-500;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+  
+  h1, h2, h3, h4, h5, h6, .font-serif {
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif !important;
   }
 }
 
 @layer components {
-  /* Organic Glass/Card */
   .organic-card {
-    @apply bg-surface rounded-3xl shadow-organic-sm border border-border transition-all duration-300;
+    @apply bg-surface rounded-[32px] shadow-organic-sm border border-border transition-all duration-500 ease-out;
   }
   .organic-card:hover {
-    @apply shadow-organic-md -translate-y-0.5;
+    @apply shadow-organic-md -translate-y-1;
   }
 
-  /* Buttons */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-6 py-3 rounded-2xl font-medium transition-all duration-200 outline-none;
+    @apply inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold tracking-wide transition-all duration-500 ease-out outline-none active:scale-95;
   }
   .btn-primary {
-    @apply bg-emerald text-white shadow-organic-sm hover:bg-emerald-dark hover:shadow-organic-md;
+    @apply bg-leaf-600 text-white shadow-organic-sm hover:bg-leaf-900 hover:shadow-organic-md;
   }
   .btn-secondary {
-    @apply bg-white text-text-primary border border-border hover:bg-background;
+    @apply bg-white text-compost-900 border border-border hover:bg-cream-100 hover:shadow-sm;
   }
   .btn-alert {
-    @apply bg-alert text-white shadow-organic-sm hover:bg-alert-dark;
+    @apply bg-terracotta-500 text-white shadow-organic-sm hover:bg-red-600;
   }
   
-  /* Inputs */
   .input-field {
-    @apply w-full px-5 py-3 bg-background border border-border rounded-2xl text-text-primary outline-none transition-all duration-200 focus:border-emerald focus:ring-4 focus:ring-primary-light;
+    @apply w-full px-6 py-4 bg-white border border-border rounded-full text-compost-900 outline-none transition-all duration-300 focus:border-leaf-400 focus:ring-4 focus:ring-leaf-100;
   }
   .input-field::placeholder {
-    @apply text-text-muted;
+    @apply text-compost-500 font-medium;
   }
 }
 
-/* Custom Scrollbar */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -99,5 +78,5 @@
   @apply bg-border rounded-full;
 }
 ::-webkit-scrollbar-thumb:hover {
-  @apply bg-text-muted;
+  @apply bg-compost-500;
 }

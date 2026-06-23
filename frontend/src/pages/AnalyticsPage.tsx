@@ -87,7 +87,7 @@ export default function AnalyticsPage() {
             >
               <option value="" disabled>Select a device</option>
               {devices.map(d => (
-                <option key={d.id} value={d.id}>{d.name || 'Unnamed Device'}</option>
+                <option key={d.id} value={d.id}>{d.display_name || 'Unnamed Device'}</option>
               ))}
             </select>
           </div>
@@ -157,7 +157,7 @@ export default function AnalyticsPage() {
                 <Tooltip 
                   contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1)' }}
                   labelFormatter={(ts) => format(new Date(ts as string), 'MMM d, yyyy')}
-                  formatter={(value: any, name: string) => [Number(value).toFixed(1), data.devices[name] || name]}
+                  formatter={(value: any, name: any) => [Number(value).toFixed(1), data.devices[name as string] || name]}
                 />
                 <Legend iconType="circle" wrapperStyle={{ paddingTop: '20px' }} />
                 

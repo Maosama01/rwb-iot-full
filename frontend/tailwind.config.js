@@ -4,45 +4,72 @@ export default {
     "./index.html",
     "./src/**/*.{js,ts,jsx,tsx}",
   ],
-  darkMode: 'class',
   theme: {
     extend: {
       colors: {
-        background: 'var(--bg-main)',
-        surface: 'var(--bg-surface)',
-        primary: {
-          light: 'var(--color-primary-light)',
-          DEFAULT: 'var(--color-primary)',
-          dark: 'var(--color-primary-dark)',
+        cream: {
+          50: 'var(--cream-50)',
+          100: 'var(--cream-100)',
         },
-        emerald: {
-          light: 'var(--color-emerald-light)',
-          DEFAULT: 'var(--color-emerald)',
-          dark: 'var(--color-emerald-dark)',
+        linen: {
+          0: 'var(--linen-0)',
         },
-        text: {
-          primary: 'var(--text-primary)',
-          secondary: 'var(--text-secondary)',
-          muted: 'var(--text-muted)',
+        compost: {
+          500: 'var(--compost-500)',
+          700: 'var(--compost-700)',
+          900: 'var(--compost-900)',
         },
-        alert: {
-          bg: 'var(--alert-bg)',
-          DEFAULT: 'var(--alert-main)',
-          dark: 'var(--alert-dark)',
+        leaf: {
+          100: 'var(--leaf-100)',
+          400: 'var(--leaf-400)',
+          600: 'var(--leaf-600)',
+          900: 'var(--leaf-900)',
+        },
+        terracotta: {
+          500: 'var(--terracotta-500)',
         },
         border: 'var(--border-color)',
+        // Keeping semantic names pointing to our new palette for backwards compatibility during refactor
+        background: 'var(--cream-50)',
+        surface: 'var(--cream-100)',
+        text: {
+          primary: 'var(--compost-900)',
+          secondary: 'var(--compost-700)',
+          muted: 'var(--compost-500)',
+        },
+        alert: {
+          bg: '#FFF5F3',
+          DEFAULT: 'var(--terracotta-500)',
+          dark: '#B94B34',
+        },
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['"Plus Jakarta Sans"', 'Inter', 'system-ui', 'sans-serif'],
+        serif: ['Outfit', 'Fraunces', 'Georgia', 'serif'],
       },
       boxShadow: {
-        'organic-sm': '0 4px 20px rgba(47, 79, 79, 0.03)',
-        'organic-md': '0 8px 30px rgba(47, 79, 79, 0.06)',
-        'organic-lg': '0 12px 40px rgba(47, 79, 79, 0.09)',
+        'organic-sm': '0 4px 20px rgba(139, 115, 85, 0.05)',
+        'organic-md': '0 8px 30px rgba(139, 115, 85, 0.08)',
+        'organic-lg': '0 12px 40px rgba(139, 115, 85, 0.12)',
       },
       borderRadius: {
         '2xl': '1rem',
         '3xl': '1.5rem',
+        '4xl': '2rem',
+        'full': '9999px',
+      },
+      transitionTimingFunction: {
+        'spring': 'cubic-bezier(0.175, 0.885, 0.32, 1.275)',
+        'spring-bouncy': 'cubic-bezier(0.34, 1.56, 0.64, 1)',
+      },
+      animation: {
+        'slide-up-spring': 'slideUpSpring 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
+      },
+      keyframes: {
+        slideUpSpring: {
+          '0%': { transform: 'translateY(100%)', opacity: 0 },
+          '100%': { transform: 'translateY(0)', opacity: 1 },
+        }
       }
     },
   },

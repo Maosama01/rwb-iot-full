@@ -17,6 +17,8 @@ from app.db.models.sensor_reading import SensorReading
 from app.db.models.user import User
 from app.db.models.user_device import UserDevice
 from app.db.models.waste_log import WasteLog
+from app.db.models.plant import Plant
+from app.db.models.compost_application import CompostApplication
 
 __all__ = [
     "User",
@@ -28,4 +30,6 @@ __all__ = [
     "DeviceConfig",
     "CompostCycle",
     "WasteLog",
+    "Plant",
+    "CompostApplication",
 ]

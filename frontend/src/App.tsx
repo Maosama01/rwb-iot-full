@@ -12,7 +12,10 @@ import DeviceSettingsPage from './pages/DeviceSettingsPage';
 import DeviceSetupPage from './pages/DeviceSetupPage';
 import WasteLogPage from './pages/WasteLogPage';
 import AnalyticsPage from './pages/AnalyticsPage';
+import GardenPage from './pages/GardenPage';
 import LandingPage from './pages/LandingPage';
+import LibraryPage from './pages/LibraryPage';
+import AIChatWidget from './components/AIChatWidget';
 
 import React, { Component, ErrorInfo } from 'react';
 
@@ -42,18 +45,18 @@ class ErrorBoundary extends Component<{children: React.ReactNode}, {hasError: bo
   }
 }
 
-import AIChatWidget from './components/AIChatWidget';
-
 function AppLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="flex min-h-screen bg-background font-sans text-text-primary relative">
+    <div className="flex flex-col md:flex-row min-h-screen bg-background font-sans text-text-primary relative transition-colors duration-500">
       <Sidebar />
-      <main className="flex-1 min-w-0 md:ml-64 p-4 md:p-8 pb-24 md:pb-8 overflow-y-auto">
-        <div className="max-w-7xl mx-auto">
+      <main className="flex-1 min-w-0 md:ml-64 p-4 md:p-10 pb-28 md:pb-10 overflow-y-auto w-full">
+        <div className="max-w-5xl mx-auto">
           {children}
         </div>
       </main>
-      <AIChatWidget />
+      <div className="md:hidden">
+        <AIChatWidget inline={false} />
+      </div>
     </div>
   );
 }
@@ -79,11 +82,13 @@ function App() {
                         <Routes>
                           <Route path="/" element={<DashboardPage />} />
                           <Route path="/alerts" element={<AlertsPage />} />
-                          <Route path="/compost" element={<CompostPage />} />
+                          <Route path="compost" element={<CompostPage />} />
+                          <Route path="garden" element={<GardenPage />} />
                           <Route path="/waste" element={<WasteLogPage />} />
                           <Route path="/device-settings" element={<DeviceSettingsPage />} />
                           <Route path="/analytics" element={<AnalyticsPage />} />
                           <Route path="/setup" element={<DeviceSetupPage />} />
+                          <Route path="/library" element={<LibraryPage />} />
                         </Routes>
                       </AppLayout>
                     </DeviceProvider>
