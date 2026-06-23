@@ -123,12 +123,12 @@ export default function AIChatWidget({ inline = false }: AIChatWidgetProps) {
     <>
       <button 
         onClick={() => setIsOpen(true)}
-        className={`fixed bottom-20 right-6 md:bottom-10 md:right-10 w-14 h-14 bg-leaf-600 hover:bg-leaf-900 text-white rounded-full shadow-organic-md flex items-center justify-center transition-transform hover:scale-110 z-50 ${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
+        className={`fixed bottom-28 right-6 md:bottom-10 md:right-10 w-14 h-14 bg-leaf-600 hover:bg-leaf-900 text-white rounded-full shadow-organic-md flex items-center justify-center transition-transform hover:scale-110 z-50 ${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
       >
         <Bot size={28} />
       </button>
 
-      <div className={`fixed bottom-20 right-4 md:bottom-10 md:right-10 z-50 transition-all duration-300 origin-bottom-right ${isOpen ? 'scale-100 opacity-100' : 'scale-50 opacity-0 pointer-events-none'}`}>
+      <div className={`fixed bottom-28 right-4 md:bottom-10 md:right-10 z-50 transition-all duration-300 origin-bottom-right ${isOpen ? 'scale-100 opacity-100' : 'scale-50 opacity-0 pointer-events-none'}`}>
         {chatInterface}
       </div>
     </>
