@@ -5,11 +5,19 @@ module.exports = {
   theme: {
     extend: {
       colors: {
-        background: '#ffffff',
-        'text-primary': '#000000',
-        'text-secondary': '#666666',
-        primary: '#4ade80',
-        card: '#f8fafc',
+        rawbin: {
+          bg: '#F5F0E8',
+          primary: '#2D5016',
+          accent: '#4A7C2F',
+          light: '#E8F0E0',
+          card: '#FDFAF5',
+          error: '#C0392B',
+        }
+      },
+      fontFamily: {
+        nunito: ['Nunito_400Regular', 'sans-serif'],
+        'nunito-bold': ['Nunito_700Bold', 'sans-serif'],
+        'nunito-black': ['Nunito_900Black', 'sans-serif'],
       }
     },
   },

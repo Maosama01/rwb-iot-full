@@ -64,6 +64,10 @@ class User(Base, TimestampMixin):
         String(100),
         nullable=False,
     )
+    location: Mapped[str | None] = mapped_column(
+        String(255),
+        nullable=True,
+    )
     firebase_push_token: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,

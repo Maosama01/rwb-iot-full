@@ -19,6 +19,7 @@ from app.db.models.user_device import UserDevice
 from app.db.models.waste_log import WasteLog
 from app.db.models.plant import Plant
 from app.db.models.compost_application import CompostApplication
+from app.db.models.compost_item_cache import CompostItemCache
 
 __all__ = [
     "User",
@@ -32,4 +33,5 @@ __all__ = [
     "WasteLog",
     "Plant",
     "CompostApplication",
+    "CompostItemCache",
 ]

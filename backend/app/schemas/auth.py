@@ -42,6 +42,11 @@ class UserRegisterRequest(BaseModel):
         description="E.164 phone number for SMS-OTP login.",
         examples=["+14155552671"],
     )
+    location: Optional[str] = Field(
+        None,
+        description="User location for tuning the machine.",
+        examples=["San Francisco, CA"],
+    )
 
     @field_validator("email", mode="before")
     @classmethod
@@ -115,6 +120,7 @@ class UserResponse(BaseModel):
     email: EmailStr
     phone: Optional[str] = None
     display_name: str
+    location: Optional[str] = None
     is_active: bool
     created_at: datetime
 

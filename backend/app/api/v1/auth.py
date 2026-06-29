@@ -72,6 +72,7 @@ async def register(body: UserRegisterRequest, db: DbSession) -> RegisterResponse
         phone=body.phone,
         password_hash=hash_password(body.password),
         display_name=body.display_name,
+        location=body.location,
     )
     db.add(user)
     await db.flush()  # populate user.id without committing
