@@ -19,9 +19,9 @@ Welcome to **Rawbin**. This repository contains the complete software stack need
 
 ## 🏗 Architecture Overview
 
-The system runs entirely locally using **Docker Compose**, orchestrating a modern, event-driven microservices architecture:
+The system runs entirely locally using **Docker Compose** for the backend, alongside an **Expo React Native** application for the frontend:
 
-- 🎨 **Frontend (`frontend`)**: React + Vite SPA with a premium "Rawbin-like" glassmorphic aesthetic.
+- 🎨 **Mobile App (`mobile`)**: React Native (Expo) app with a premium "Rawbin-like" glassmorphic aesthetic, NativeWind (Tailwind CSS), SMS OTP login, and a dynamic hardware simulator.
 - ⚡ **API (`api`)**: FastAPI backend for device pairing, auth, and historical data.
 - 🗄️ **Database (`db`)**: PostgreSQL 16 + TimescaleDB for high-performance time-series sensor readings.
 - 🚀 **Cache & Broker (`redis`)**: Redis 7 for Celery message brokering and caching.
@@ -109,18 +109,17 @@ docker compose exec api alembic upgrade head
 
 With the stack running, everything is immediately accessible!
 
-### 🖥 The Web Dashboard
-- **URL**: [http://localhost:3000](http://localhost:3000)
-- The frontend is pre-configured to communicate with the local API.
-- The **Hardware Simulator** automatically publishes fake composter data. Once you log in and "pair" a device, you will instantly see live metrics!
+### 📱 The Mobile App
+- The **Mobile** folder contains an Expo React Native application.
+- To start it, run `npm install` then `npx expo start` inside the `mobile` directory.
+- The **Hardware Simulator** is built right into the app's dashboard. Once you log in (using the seamless SMS OTP system), you can activate the simulator to instantly visualize live metrics and 30-day composting cycles!
 
 ### 📱 Opening on Your Phone (Local Network Testing)
 To view and interact with the premium Rawbin app on your mobile device:
-1. Ensure your phone and your computer are connected to the **same Wi-Fi network**.
-2. Find your computer's local IP address (e.g., `192.168.1.100` or `10.0.0.x`).
-    - **Mac**: `System Settings > Network > Wi-Fi > Details`
-    - **Windows**: Open Command Prompt and type `ipconfig` (look for "IPv4 Address").
-3. Open your phone's browser and go to: `http://<YOUR_LOCAL_IP>:3000`
+1. Make sure your phone has the **Expo Go** app installed.
+2. Ensure your phone and your computer are connected to the **same Wi-Fi network**.
+3. Run `npx expo start` in the `mobile` folder.
+4. Scan the QR code with your phone's camera (iOS) or Expo Go app (Android).
 *(The app will automatically route API calls to your computer's backend over the local network).*
 
 ### ⚙️ API Documentation
@@ -136,8 +135,8 @@ To view and interact with the premium Rawbin app on your mobile device:
 
 ## 🛠 Development Notes
 
-- **🔥 Hot Reloading**: Both the FastAPI `api` and the React `frontend` have their source directories mounted into the Docker containers. Changes made to Python files in `backend/app/` or React files in `frontend/src/` will automatically hot-reload the respective servers.
-- **🔐 Authentication**: Rawbin supports SMS OTP login. Locally, SMS sending defaults to a "stub" mode (`SMS_PROVIDER=stub`). You can read the OTP codes directly from the `api` Docker logs to log in:
+- **🔥 Hot Reloading**: The FastAPI `api` and the `mobile` app support hot reloading. Changes made to Python files in `backend/app/` or React Native files in `mobile/src/` will automatically hot-reload the respective platforms.
+- **🔐 Authentication**: Rawbin supports seamless SMS OTP login. Locally, SMS sending defaults to a "stub" mode (`SMS_PROVIDER=stub`). You can read the OTP codes directly from the `api` Docker logs to log in:
   ```bash
   docker compose logs -f api
   ```

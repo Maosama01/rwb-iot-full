@@ -46,6 +46,7 @@ Built on PostgreSQL 16 and TimescaleDB for ultra-fast time-series queries.
 - **`sensor_readings`**: **TimescaleDB hypertable**, partitioned into 7-day chunks to handle millions of rows of temperature, moisture, and methane telemetry.
 - **`compost_cycles`**: Tracks the batch lifecycle (`active → curing → completed`).
 - **`waste_logs`**: Logs individual additions of food scraps (`greens|browns|food|other`) to calculate diverted landfill mass.
+- **`compost_item_cache`**: Caches AI categorization for compost items to optimize performance and reduce external LLM API calls.
 - **`plants` & `compost_applications`**: The Garden feature, linking finished compost batches to real-world plant health.
 
 ## 🔒 Security & Authentication
