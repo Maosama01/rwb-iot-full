@@ -1,0 +1,72 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Theme tokens copied from frontend/src/index.css so admin == dashboard look. */
+@layer base {
+  :root {
+    color-scheme: light;
+    --cream-50: #FAFAF9;
+    --cream-100: #F5F5F4;
+    --linen-0: #FFFFFF;
+
+    --compost-500: #78716C;
+    --compost-700: #44403C;
+    --compost-900: #1C1917;
+
+    --leaf-100: #D1FAE5;
+    --leaf-400: #34D399;
+    --leaf-600: #059669;
+    --leaf-900: #064E3B;
+
+    --terracotta-500: #EF4444;
+
+    --border-color: rgba(28, 25, 23, 0.08);
+  }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    @apply text-text-primary bg-background antialiased;
+    font-family: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+    min-height: 100vh;
+  }
+
+  h1, h2, h3, h4, h5, h6, .font-serif {
+    font-family: 'Outfit', system-ui, -apple-system, sans-serif !important;
+  }
+}
+
+@layer components {
+  .organic-card {
+    @apply bg-surface rounded-[32px] shadow-organic-sm border border-border transition-all duration-500 ease-out;
+  }
+  .organic-card:hover {
+    @apply shadow-organic-md -translate-y-1;
+  }
+
+  .btn {
+    @apply inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full font-bold tracking-wide transition-all duration-500 ease-out outline-none active:scale-95;
+  }
+  .btn-primary {
+    @apply bg-leaf-600 text-white shadow-organic-sm hover:bg-leaf-900 hover:shadow-organic-md;
+  }
+  .btn-secondary {
+    @apply bg-white text-compost-900 border border-border hover:bg-cream-100 hover:shadow-sm;
+  }
+  .btn-alert {
+    @apply bg-terracotta-500 text-white shadow-organic-sm hover:bg-red-600;
+  }
+
+  .input-field {
+    @apply w-full px-6 py-4 bg-white border border-border rounded-full text-compost-900 outline-none transition-all duration-300 focus:border-leaf-400 focus:ring-4 focus:ring-leaf-100;
+  }
+  .input-field::placeholder {
+    @apply text-compost-500 font-medium;
+  }
+}
+
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { @apply bg-border rounded-full; }
+::-webkit-scrollbar-thumb:hover { @apply bg-compost-500; }

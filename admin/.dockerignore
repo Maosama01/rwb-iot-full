@@ -1,0 +1,9 @@
+# Never copy host-built deps/output into the image — they're rebuilt inside.
+node_modules
+dist
+.vite
+
+# Local noise
+.git
+.DS_Store
+*.log
