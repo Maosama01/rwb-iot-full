@@ -175,6 +175,18 @@ services:
     depends_on:
       - api
 
+  # ─── React Admin Dashboard ──────────────────────────────────────────────────
+  admin:
+    build:
+      context: ../admin
+      dockerfile: Dockerfile
+    container_name: rawbin_admin
+    restart: unless-stopped
+    ports:
+      - "3001:80"
+    depends_on:
+      - api
+
 
 volumes:
   postgres_data:

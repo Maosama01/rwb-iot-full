@@ -96,3 +96,25 @@ async def get_current_user(
 
 
 CurrentUser = Annotated[User, Depends(get_current_user)]
+
+
+# ── Admin-only gate ──────────────────────────────────────────────────────────
+async def require_admin(current_user: CurrentUser) -> User:
+    """
+    Allow the request only if the authenticated user is an operator/admin.
+
+    Builds on get_current_user (so the token is already validated and the
+    account is active), then enforces the is_admin flag.
+
+    Raises HTTP 403 — the caller is authenticated but not permitted, which is
+    distinct from 401 (not authenticated at all).
+    """
+    if not current_user.is_admin:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Administrator access required.",
+        )
+    return current_user
+
+
+AdminUser = Annotated[User, Depends(require_admin)]

@@ -31,6 +31,8 @@ class User(Base, TimestampMixin):
     firebase_push_token FCM token for push notifications; nullable (user may
                         revoke notification permission)
     is_active           Soft-disable account without deleting history
+    is_admin            Grants access to the operator/admin dashboard and the
+                        cross-tenant /api/v1/admin/* endpoints; default False
     """
 
     __tablename__ = "users"
@@ -69,6 +71,13 @@ class User(Base, TimestampMixin):
     is_active: Mapped[bool] = mapped_column(
         Boolean,
         default=True,
+        nullable=False,
+    )
+    # Operator/admin flag. Regular users are False; only admins may log into the
+    # admin dashboard and call the cross-tenant /api/v1/admin/* endpoints.
+    is_admin: Mapped[bool] = mapped_column(
+        Boolean,
+        default=False,
         nullable=False,
     )
 

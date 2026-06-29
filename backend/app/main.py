@@ -23,6 +23,7 @@ from fastapi.openapi.docs import get_redoc_html, get_swagger_ui_html
 from fastapi.responses import HTMLResponse
 
 from app.api.v1 import (
+    admin,
     alerts,
     auth,
     cycles,
@@ -137,6 +138,7 @@ def create_app() -> FastAPI:
     app.include_router(analytics.router, prefix=API_PREFIX)
     app.include_router(ai.router, prefix=API_PREFIX)
     app.include_router(plants.router, prefix=API_PREFIX)
+    app.include_router(admin.router, prefix=API_PREFIX)
 
     # ── Health check (ECS / ALB target group health probe) ───────────────────
     @app.get("/health", tags=["Infra"], include_in_schema=False)
