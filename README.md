@@ -53,7 +53,7 @@ graph TD
     end
 
     subgraph "Client"
-        UI[React Dashboard UI]
+        App[React Native Mobile App]
     end
 
     Sim -- Publishes Telemetry --> MQTT
@@ -65,7 +65,7 @@ graph TD
     Redis -- Executes Tasks --> Celery
     Celery -- Writes Results --> DB
     
-    UI -- REST / HTTP --> API
+    App -- REST / HTTP --> API
 ```
 
 ---
