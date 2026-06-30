@@ -24,6 +24,9 @@ class UserOut(BaseModel):
     has_push_token: bool = Field(
         description="True if an FCM token is registered on this account."
     )
+    placement: str | None = None
+    diet_type: str | None = None
+    non_veg_frequency: str | None = None
     created_at: datetime
 
     @classmethod
@@ -34,6 +37,9 @@ class UserOut(BaseModel):
             phone=user.phone,
             display_name=user.display_name,
             is_active=user.is_active,
+            placement=user.placement,
+            diet_type=user.diet_type,
+            non_veg_frequency=user.non_veg_frequency,
             has_push_token=bool(user.firebase_push_token),
             created_at=user.created_at,
         )
@@ -51,6 +57,18 @@ class UserPatchIn(BaseModel):
         default=None,
         pattern=_E164_PATTERN,
         description="E.164 phone number used for SMS-OTP login.",
+    )
+    placement: str | None = Field(
+        default=None,
+        description="Placement of the Rawbin.",
+    )
+    diet_type: str | None = Field(
+        default=None,
+        description="Diet type of the user.",
+    )
+    non_veg_frequency: str | None = Field(
+        default=None,
+        description="Frequency of non-veg consumption.",
     )
 
 

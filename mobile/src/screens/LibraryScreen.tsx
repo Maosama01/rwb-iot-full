@@ -1,15 +1,128 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, ImageBackground, ActivityIndicator } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, ImageBackground, ActivityIndicator, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { Audio } from 'expo-av';
+import * as FileSystem from 'expo-file-system';
 import apiClient from '../api/client';
 
 export function LibraryScreen() {
   const [activeTab, setActiveTab] = useState<'item' | 'category'>('item');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
+  const [isProcessingVoice, setIsProcessingVoice] = useState(false);
+  const [recording, setRecording] = useState<any>(null);
   const [result, setResult] = useState<any>(null);
   const debounceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const mediaRecorder = useRef<any>(null);
+  const audioChunks = useRef<any[]>([]);
+
+  const startRecording = async () => {
+    try {
+      if (Platform.OS === 'web') {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        mediaRecorder.current = new (window as any).MediaRecorder(stream);
+        audioChunks.current = [];
+        
+        mediaRecorder.current.ondataavailable = (e: any) => {
+          if (e.data.size > 0) {
+            audioChunks.current.push(e.data);
+          }
+        };
+        
+        mediaRecorder.current.onstop = async () => {
+          const audioBlob = new Blob(audioChunks.current, { type: 'audio/webm' });
+          const reader = new FileReader();
+          reader.readAsDataURL(audioBlob);
+          reader.onloadend = async () => {
+            const base64data = reader.result?.toString().split(',')[1];
+            if (base64data) {
+              setIsProcessingVoice(true);
+              try {
+                const response = await apiClient.post('/ai/check-item-voice', { 
+                  audio_base64: base64data,
+                  mime_type: 'audio/webm'
+                });
+                handleAIResponse(response.data);
+              } catch (err: any) {
+                console.error('API Error:', err);
+                setIsProcessingVoice(false);
+                const backendError = err.response?.data?.detail || err.message || 'Failed to process audio on server.';
+                setResult({ verdict: 'maybe', title: 'Error', reason: backendError, badge: 'Error' });
+              }
+            } else {
+              setResult({ verdict: 'maybe', title: 'Error', reason: 'Failed to encode audio on device.', badge: 'Error' });
+            }
+          };
+          stream.getTracks().forEach((track: any) => track.stop());
+        };
+        
+        mediaRecorder.current.start();
+        setRecording(true);
+      } else {
+        await Audio.requestPermissionsAsync();
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: true,
+          playsInSilentModeIOS: true,
+        });
+        const { recording: newRecording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
+        setRecording(newRecording);
+      }
+    } catch (err: any) {
+      console.error('Failed to start recording', err);
+      setResult({ verdict: 'maybe', title: 'Mic Error', reason: err.message || 'Microphone access denied.', badge: 'Error' });
+    }
+  };
+
+  const stopRecording = async () => {
+    if (!recording) return;
+    
+    if (Platform.OS === 'web') {
+      if (mediaRecorder.current && mediaRecorder.current.state !== 'inactive') {
+        mediaRecorder.current.stop();
+      }
+      setRecording(null);
+    } else {
+      setRecording(null);
+      try {
+        await recording.stopAndUnloadAsync();
+        await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
+        const uri = recording.getURI();
+        if (uri) {
+          setIsProcessingVoice(true);
+          const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
+          const response = await apiClient.post('/ai/check-item-voice', { audio_base64: base64 });
+          handleAIResponse(response.data);
+        }
+      } catch (error) {
+        console.error('Failed to stop/process recording', error);
+        setIsProcessingVoice(false);
+      }
+    }
+  };
+
+  const handleAIResponse = (data: any) => {
+    let verdict = 'yes';
+    let badge = 'Compostable';
+    if (data.category === 'no') {
+      verdict = 'no';
+      badge = 'Avoid Always';
+    } else if (data.category === 'browns') {
+      badge = 'Carbon Rich (Brown)';
+    } else {
+      badge = 'Nitrogen Rich (Green)';
+    }
+
+    setResult({
+      verdict: verdict,
+      title: data.title,
+      reason: data.description,
+      tip: data.tips && data.tips.length > 0 ? data.tips[0] : 'Chop it up to help it decompose faster.',
+      badge: badge,
+      breakdown_time: null
+    });
+    setIsProcessingVoice(false);
+  };
 
   const handleSearch = (text: string) => {
     setSearchQuery(text);
@@ -26,27 +139,7 @@ export function LibraryScreen() {
           const response = await apiClient.post('/ai/check-item', {
             item_name: text
           });
-          
-          const data = response.data;
-          let verdict = 'yes';
-          let badge = 'Compostable';
-          if (data.category === 'no') {
-            verdict = 'no';
-            badge = 'Avoid Always';
-          } else if (data.category === 'browns') {
-            badge = 'Carbon Rich (Brown)';
-          } else {
-            badge = 'Nitrogen Rich (Green)';
-          }
-
-          setResult({
-            verdict: verdict,
-            title: data.title,
-            reason: data.description,
-            tip: data.tips && data.tips.length > 0 ? data.tips[0] : 'Chop it up to help it decompose faster.',
-            badge: badge,
-            breakdown_time: null
-          });
+          handleAIResponse(response.data);
         } catch (error) {
           console.error("AI Check Error:", error);
           // Fallback or show error
@@ -144,15 +237,27 @@ export function LibraryScreen() {
               <>
                 {/* Search Bar */}
                 <View className="mb-2">
-                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FDFAF5', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 }}>
-                    <Ionicons name="search" size={20} color="#4A7C2F" />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FDFAF5', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: recording ? '#FF3B30' : 'rgba(0,0,0,0.06)', elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 }}>
+                    <Ionicons name="search" size={20} color={recording ? "#FF3B30" : "#4A7C2F"} />
                     <TextInput 
                       className="flex-1 ml-3 text-[#2D5016] font-nunito-bold"
-                      placeholder="Type any food item (e.g. Haddi)..."
-                      placeholderTextColor="#a69d92"
+                      placeholder={recording ? "Listening..." : "Type any food item (e.g. Haddi)..."}
+                      placeholderTextColor={recording ? "#FF3B30" : "#a69d92"}
                       value={searchQuery}
                       onChangeText={handleSearch}
+                      editable={!recording && !isProcessingVoice}
                     />
+                    <TouchableOpacity
+                      onPress={recording ? stopRecording : startRecording}
+                      disabled={isProcessingVoice}
+                      className="p-1"
+                    >
+                      {isProcessingVoice ? (
+                        <ActivityIndicator size="small" color="#4A7C2F" />
+                      ) : (
+                        <Ionicons name="mic" size={24} color={recording ? "#FF3B30" : "#a69d92"} />
+                      )}
+                    </TouchableOpacity>
                   </View>
                 </View>
 

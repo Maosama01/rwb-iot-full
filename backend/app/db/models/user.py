@@ -68,6 +68,18 @@ class User(Base, TimestampMixin):
         String(255),
         nullable=True,
     )
+    placement: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+    diet_type: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
+    non_veg_frequency: Mapped[str | None] = mapped_column(
+        String(50),
+        nullable=True,
+    )
     firebase_push_token: Mapped[str | None] = mapped_column(
         Text,
         nullable=True,

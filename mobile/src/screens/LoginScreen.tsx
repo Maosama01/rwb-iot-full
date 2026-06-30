@@ -69,8 +69,19 @@ export function LoginScreen() {
       await AsyncStorage.setItem('access_token', accessToken);
       await AsyncStorage.setItem('refresh_token', refreshToken);
       
+      // Fetch user profile to check if setup is needed
+      const userResponse = await apiClient.get('/users/me', {
+        headers: { Authorization: `Bearer ${accessToken}` }
+      });
+      const user = userResponse.data;
+      
       setIsLoading(false);
-      navigation.replace('MainApp');
+      
+      if (!user.placement || !user.diet_type) {
+        navigation.replace('Setup');
+      } else {
+        navigation.replace('MainApp');
+      }
     } catch (error: any) {
       setIsLoading(false);
       const message = error.response?.data?.detail || 'An unexpected error occurred. Please try again.';
@@ -104,8 +115,20 @@ export function LoginScreen() {
       const { access_token, refresh_token } = response.data;
       await AsyncStorage.setItem('access_token', access_token);
       await AsyncStorage.setItem('refresh_token', refresh_token);
+      
+      // Fetch user profile to check if setup is needed
+      const userResponse = await apiClient.get('/users/me', {
+        headers: { Authorization: `Bearer ${access_token}` }
+      });
+      const user = userResponse.data;
+      
       setIsLoading(false);
-      navigation.replace('MainApp');
+      
+      if (!user.placement || !user.diet_type) {
+        navigation.replace('Setup');
+      } else {
+        navigation.replace('MainApp');
+      }
     } catch (error: any) {
       setIsLoading(false);
       setErrorMsg(error.response?.data?.detail || 'Invalid or expired OTP code.');

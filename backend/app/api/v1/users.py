@@ -66,6 +66,13 @@ async def patch_me(
             )
         current_user.phone = body.phone
 
+    if body.placement is not None:
+        current_user.placement = body.placement
+    if body.diet_type is not None:
+        current_user.diet_type = body.diet_type
+    if body.non_veg_frequency is not None:
+        current_user.non_veg_frequency = body.non_veg_frequency
+
     db.add(current_user)
     await db.flush()
 

@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, ImageBackground, KeyboardAvoidingView, Platform, Image, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, ImageBackground, KeyboardAvoidingView, Platform, Image, Alert, Linking } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -32,6 +32,22 @@ export function RecipesScreen() {
   };
 
   const handleSnapFridge = async () => {
+    if (Platform.OS === 'web') {
+      // Alert.alert with custom buttons doesn't work on web.
+      // launchImageLibrary on mobile web natively prompts for Camera or Gallery anyway!
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        aspect: [4, 3],
+        quality: 0.5,
+        base64: true,
+      });
+      if (!result.canceled && result.assets && result.assets.length > 0) {
+        processImage(result.assets[0].uri, result.assets[0].base64 || null);
+      }
+      return;
+    }
+
     Alert.alert(
       "Snap Your Fridge",
       "Choose an option",
@@ -111,9 +127,6 @@ export function RecipesScreen() {
     }
   };
 
-  const handleSurpriseMe = () => {
-    setIngredients(['overripe banana', 'stale bread', 'spinach', 'milk']);
-  };
 
   const handleFindRecipes = async () => {
     if (ingredients.length === 0) return;
@@ -155,7 +168,7 @@ export function RecipesScreen() {
           <View className="px-6 pt-6 pb-2">
             <View className="flex-row items-center">
               <Ionicons name="leaf-outline" size={28} color="#2D5016" className="mr-2" />
-              <Text className="text-[#2D5016] font-nunito-black text-3xl ml-2">Use It Up</Text>
+              <Text className="text-[#2D5016] font-nunito-black text-3xl ml-2">SaveMyFood</Text>
             </View>
             <Text className="text-[#4A7C2F] font-nunito-bold text-sm mt-1 ml-9">Turn leftovers into something beautiful</Text>
           </View>
@@ -219,13 +232,6 @@ export function RecipesScreen() {
                       </View>
                     )}
 
-                    <Text className="text-[#4A7C2F] font-nunito-bold text-xs uppercase tracking-widest text-center mb-4">── OR ──</Text>
-                    
-                    <View className="flex-row justify-center mb-6">
-                      <TouchableOpacity onPress={handleSurpriseMe}>
-                        <Text className="text-[#4A7C2F] font-nunito-bold text-xs uppercase bg-[#E8F0E0]/80 px-5 py-3 rounded-full overflow-hidden shadow-sm border border-[rgba(0,0,0,0.06)]">🎲 Surprise me</Text>
-                      </TouchableOpacity>
-                    </View>
                   </>
                 )}
 
@@ -297,6 +303,17 @@ export function RecipesScreen() {
                             <Text className="text-[#2D5016] font-nunito-bold text-xs">🍽 {recipe.servings}</Text>
                             <Text className="text-[#2D5016] font-nunito-bold text-xs">🌱 {recipe.difficulty}</Text>
                           </View>
+                          
+                          <View className="px-5 py-3 border-b border-black/5 bg-white">
+                            <TouchableOpacity 
+                              onPress={() => Linking.openURL(recipe.youtube_link)}
+                              className="flex-row items-center justify-center bg-[#FF0000]/10 py-3 rounded-[12px]"
+                            >
+                              <Ionicons name="logo-youtube" size={18} color="#FF0000" />
+                              <Text className="text-[#FF0000] font-nunito-bold text-sm ml-2">Watch Tutorial on YouTube</Text>
+                            </TouchableOpacity>
+                          </View>
+
                           <View className="p-5 border-b border-black/5">
                             <Text className="text-[#2D5016] font-nunito-bold text-xs mb-3">Instructions:</Text>
                             {recipe.instructions.map((inst: string, i: number) => (

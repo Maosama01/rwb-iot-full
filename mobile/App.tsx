@@ -15,6 +15,7 @@ import { DashboardScreen } from './src/screens/DashboardScreen';
 import { LibraryScreen } from './src/screens/LibraryScreen';
 import { RecipesScreen } from './src/screens/RecipesScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
+import { SetupScreen } from './src/screens/SetupScreen';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -56,7 +57,7 @@ function MainTabs() {
         name="Compost Check" 
         component={LibraryScreen} 
         options={{ 
-          tabBarLabel: 'COMPOST CHECK',
+          tabBarLabel: 'CAN IT COMPOST?',
           tabBarIcon: ({ color }) => (
             <Ionicons name="trash-bin-outline" size={26} color={color} />
           )
@@ -66,7 +67,7 @@ function MainTabs() {
         name="Use It Up" 
         component={RecipesScreen} 
         options={{ 
-          tabBarLabel: 'USE IT UP',
+          tabBarLabel: 'SaveMyFood',
           tabBarIcon: ({ color }) => (
             <Ionicons name="restaurant-outline" size={24} color={color} />
           )
@@ -100,6 +101,7 @@ export default function App() {
           <StatusBar style="dark" />
           <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
             <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="Setup" component={SetupScreen} />
             <Stack.Screen name="MainApp" component={MainTabs} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
           </Stack.Navigator>
