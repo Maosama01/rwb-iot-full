@@ -6,11 +6,13 @@ module.exports = {
     extend: {
       colors: {
         rawbin: {
-          bg: '#F5F0E8',
-          primary: '#2D5016',
-          accent: '#4A7C2F',
-          light: '#E8F0E0',
-          card: '#FDFAF5',
+          bg: '#fff9e7',       // Off-white
+          primary: '#45B900',  // Rawbin Green
+          accent: '#e6b8ff',   // Lavender Fields
+          text: '#251605',     // Chestnut Brown
+          subtext: '#744107',  // Milk Chocolate
+          tan: '#e5a971',      // Coconut Cream
+          card: '#ffffff',
           error: '#C0392B',
         }
       },

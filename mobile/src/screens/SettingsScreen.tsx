@@ -39,72 +39,72 @@ export function SettingsScreen() {
   };
 
   return (
-    <View className="flex-1 bg-[#F5F0E8]">
+    <View className="flex-1 bg-rawbin-bg">
       <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
         {/* Header */}
         <View className="flex-row items-center px-6 pt-6 pb-4 border-b border-black/5">
           <TouchableOpacity onPress={() => navigation.goBack()} className="mr-4">
-            <Ionicons name="arrow-back" size={24} color="#2D5016" />
+            <Ionicons name="arrow-back" size={24} color="#251605" />
           </TouchableOpacity>
-          <Text className="text-[#2D5016] font-nunito-black text-2xl">Settings</Text>
+          <Text className="text-rawbin-text font-nunito-black text-2xl">Settings</Text>
         </View>
 
         <ScrollView className="flex-1 px-6 pt-6">
           
           <View className="mb-8">
-            <Text className="text-[#4A7C2F] font-nunito-bold text-xs uppercase tracking-widest mb-3">Account</Text>
+            <Text className="text-rawbin-subtext font-nunito-bold text-xs uppercase tracking-widest mb-3">Account</Text>
             <View className="bg-white rounded-[16px] shadow-sm border border-[rgba(0,0,0,0.06)] overflow-hidden">
               <TouchableOpacity className="flex-row justify-between items-center p-4 border-b border-[rgba(0,0,0,0.06)]">
                 <View className="flex-row items-center">
-                  <View className="w-8 h-8 rounded-full bg-[#E8F0E0] items-center justify-center mr-3">
-                    <Ionicons name="person-outline" size={18} color="#4A7C2F" />
+                  <View className="w-8 h-8 rounded-full bg-rawbin-accent items-center justify-center mr-3">
+                    <Ionicons name="person-outline" size={18} color="#744107" />
                   </View>
-                  <Text className="text-[#2D5016] font-nunito-bold text-base">Edit Profile</Text>
+                  <Text className="text-rawbin-text font-nunito-bold text-base">Edit Profile</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#a69d92" />
+                <Ionicons name="chevron-forward" size={20} color="#e5a971" />
               </TouchableOpacity>
               
               <TouchableOpacity className="flex-row justify-between items-center p-4">
                 <View className="flex-row items-center">
-                  <View className="w-8 h-8 rounded-full bg-[#E8F0E0] items-center justify-center mr-3">
-                    <Ionicons name="notifications-outline" size={18} color="#4A7C2F" />
+                  <View className="w-8 h-8 rounded-full bg-rawbin-accent items-center justify-center mr-3">
+                    <Ionicons name="notifications-outline" size={18} color="#744107" />
                   </View>
-                  <Text className="text-[#2D5016] font-nunito-bold text-base">Notifications</Text>
+                  <Text className="text-rawbin-text font-nunito-bold text-base">Notifications</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#a69d92" />
+                <Ionicons name="chevron-forward" size={20} color="#e5a971" />
               </TouchableOpacity>
             </View>
           </View>
 
           <View className="mb-8">
-            <Text className="text-[#4A7C2F] font-nunito-bold text-xs uppercase tracking-widest mb-3">Device</Text>
+            <Text className="text-rawbin-subtext font-nunito-bold text-xs uppercase tracking-widest mb-3">Device</Text>
             <View className="bg-white rounded-[16px] shadow-sm border border-[rgba(0,0,0,0.06)] overflow-hidden">
               <TouchableOpacity className="flex-row justify-between items-center p-4">
                 <View className="flex-row items-center">
-                  <View className="w-8 h-8 rounded-full bg-[#E8F0E0] items-center justify-center mr-3">
-                    <Ionicons name="hardware-chip-outline" size={18} color="#4A7C2F" />
+                  <View className="w-8 h-8 rounded-full bg-rawbin-accent items-center justify-center mr-3">
+                    <Ionicons name="hardware-chip-outline" size={18} color="#744107" />
                   </View>
-                  <Text className="text-[#2D5016] font-nunito-bold text-base">RAWBIN Setup</Text>
+                  <Text className="text-rawbin-text font-nunito-bold text-base">RAWBIN Setup</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#a69d92" />
+                <Ionicons name="chevron-forward" size={20} color="#e5a971" />
               </TouchableOpacity>
             </View>
           </View>
 
           <View className="mb-8">
-            <Text className="text-[#4A7C2F] font-nunito-bold text-xs uppercase tracking-widest mb-3">Support</Text>
+            <Text className="text-rawbin-subtext font-nunito-bold text-xs uppercase tracking-widest mb-3">Support</Text>
             <View className="bg-white rounded-[16px] shadow-sm border border-[rgba(0,0,0,0.06)] overflow-hidden">
               <TouchableOpacity className="flex-row justify-between items-center p-4 border-b border-[rgba(0,0,0,0.06)]">
-                <Text className="text-[#2D5016] font-nunito-bold text-base ml-11">Help Center</Text>
-                <Ionicons name="chevron-forward" size={20} color="#a69d92" />
+                <Text className="text-rawbin-text font-nunito-bold text-base ml-11">Help Center</Text>
+                <Ionicons name="chevron-forward" size={20} color="#e5a971" />
               </TouchableOpacity>
               <TouchableOpacity className="flex-row justify-between items-center p-4 border-b border-[rgba(0,0,0,0.06)]">
-                <Text className="text-[#2D5016] font-nunito-bold text-base ml-11">Terms of Service</Text>
-                <Ionicons name="chevron-forward" size={20} color="#a69d92" />
+                <Text className="text-rawbin-text font-nunito-bold text-base ml-11">Terms of Service</Text>
+                <Ionicons name="chevron-forward" size={20} color="#e5a971" />
               </TouchableOpacity>
               <TouchableOpacity className="flex-row justify-between items-center p-4">
-                <Text className="text-[#2D5016] font-nunito-bold text-base ml-11">Privacy Policy</Text>
-                <Ionicons name="chevron-forward" size={20} color="#a69d92" />
+                <Text className="text-rawbin-text font-nunito-bold text-base ml-11">Privacy Policy</Text>
+                <Ionicons name="chevron-forward" size={20} color="#e5a971" />
               </TouchableOpacity>
             </View>
           </View>
@@ -113,7 +113,7 @@ export function SettingsScreen() {
             onPress={handleLogout}
             className="bg-white rounded-[16px] shadow-sm border border-[rgba(0,0,0,0.06)] p-4 items-center mb-10"
           >
-            <Text className="text-[#C0392B] font-nunito-black text-base">Log Out</Text>
+            <Text className="text-rawbin-error font-nunito-black text-base">Log Out</Text>
           </TouchableOpacity>
           
         </ScrollView>

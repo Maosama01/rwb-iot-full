@@ -50,10 +50,10 @@ export function SetupScreen() {
     <TouchableOpacity
       onPress={onPress}
       className={`px-4 py-3 rounded-[12px] border mr-3 mb-3 ${
-        selected ? 'bg-[#2D5016] border-[#2D5016]' : 'bg-[#FDFAF5] border-[rgba(0,0,0,0.06)]'
+        selected ? 'bg-rawbin-primary border-rawbin-primary' : 'bg-rawbin-card border-[rgba(0,0,0,0.06)]'
       }`}
     >
-      <Text className={`font-nunito-bold text-sm ${selected ? 'text-white' : 'text-[#2D5016]'}`}>
+      <Text className={`font-nunito-bold text-sm ${selected ? 'text-white' : 'text-rawbin-text'}`}>
         {label}
       </Text>
     </TouchableOpacity>
@@ -65,15 +65,15 @@ export function SetupScreen() {
       style={{ flex: 1 }}
       imageStyle={{ opacity: 0.35, resizeMode: 'cover' }}
     >
-      <View className="flex-1 bg-[#F5F0E8]/70">
+      <View className="flex-1 bg-rawbin-bg/70">
         <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 32, paddingVertical: 60, flexGrow: 1 }}>
           
           <View className="items-center mb-8">
             <View className="bg-white/80 p-4 rounded-full shadow-sm border border-black/5 mb-3">
-              <Ionicons name="settings-outline" size={40} color="#2D5016" />
+              <Ionicons name="settings-outline" size={40} color="#251605" />
             </View>
-            <Text className="text-[#2D5016] font-nunito-black text-3xl tracking-tight text-center">App Setup</Text>
-            <Text className="text-[#4A7C2F] font-nunito-bold text-sm text-center mt-2">
+            <Text className="text-rawbin-text font-nunito-black text-3xl tracking-tight text-center">App Setup</Text>
+            <Text className="text-rawbin-subtext font-nunito-bold text-sm text-center mt-2">
               Let's tune your Rawbin for optimal performance based on your environment and usage.
             </Text>
           </View>
@@ -81,10 +81,10 @@ export function SetupScreen() {
           <View className="bg-white/80 rounded-[24px] p-6 shadow-sm border border-black/5 mb-6">
             
             <View className="mb-6">
-              <Text className="text-[#2D5016] font-nunito-bold text-base mb-3">
+              <Text className="text-rawbin-text font-nunito-bold text-base mb-3">
                 Where will you place the Rawbin?
               </Text>
-              <Text className="text-[#a69d92] font-nunito-regular text-xs mb-3">
+              <Text className="text-rawbin-subtext font-nunito-regular text-xs mb-3">
                 This helps us adjust the internal temperature based on sunlight and ambient heat.
               </Text>
               <View className="flex-row flex-wrap">
@@ -100,10 +100,10 @@ export function SetupScreen() {
             </View>
 
             <View className="mb-6">
-              <Text className="text-[#2D5016] font-nunito-bold text-base mb-3">
+              <Text className="text-rawbin-text font-nunito-bold text-base mb-3">
                 What is your diet type?
               </Text>
-              <Text className="text-[#a69d92] font-nunito-regular text-xs mb-3">
+              <Text className="text-rawbin-subtext font-nunito-regular text-xs mb-3">
                 This helps us tune the motor spin speed and duration for breaking down different waste types.
               </Text>
               <View className="flex-row flex-wrap">
@@ -123,7 +123,7 @@ export function SetupScreen() {
 
             {dietType === 'Non-Veg' && (
               <View className="mb-6">
-                <Text className="text-[#2D5016] font-nunito-bold text-base mb-3">
+                <Text className="text-rawbin-text font-nunito-bold text-base mb-3">
                   How often do you eat non-veg?
                 </Text>
                 <View className="flex-row flex-wrap">
@@ -141,13 +141,13 @@ export function SetupScreen() {
 
             <TouchableOpacity 
               onPress={handleSubmit}
-              className="bg-[#2D5016] rounded-[16px] py-4 items-center shadow-sm mt-4"
+              className="bg-rawbin-primary rounded-[16px] py-4 items-center shadow-sm mt-4"
               disabled={isLoading}
             >
               {isLoading ? (
-                <ActivityIndicator color="#F5F0E8" />
+                <ActivityIndicator color="#fff9e7" />
               ) : (
-                <Text className="text-[#F5F0E8] font-nunito-black text-lg">
+                <Text className="text-white font-nunito-black text-lg">
                   Complete Setup
                 </Text>
               )}

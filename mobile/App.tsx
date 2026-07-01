@@ -29,14 +29,14 @@ function MainTabs() {
       headerShown: false,
       lazy: false,
       tabBarStyle: { 
-        backgroundColor: '#F8F5EE', // Beige background matching the mockup
+        backgroundColor: '#fff9e7', // Off-white
         borderTopWidth: 1, 
-        borderTopColor: '#e5dfce',
+        borderTopColor: 'rgba(0,0,0,0.06)',
         height: 90,
         paddingTop: 10,
       },
-      tabBarActiveTintColor: '#2D5016', // Updated to #2D5016
-      tabBarInactiveTintColor: '#a69d92', // Light beige inactive text
+      tabBarActiveTintColor: '#45B900', // Rawbin Green
+      tabBarInactiveTintColor: '#e5a971', // Coconut Cream
       tabBarLabelStyle: {
         fontFamily: 'Nunito_900Black',
         fontSize: 9,

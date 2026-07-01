@@ -200,7 +200,7 @@ export function DashboardScreen() {
   }
   
   let statusText = "ALL GOING WELL";
-  let statusColor = "#4A7C2F"; // Green
+  let statusColor = "#45B900"; // Green
   
   if (!hasActiveCycle) {
     statusText = "READY TO START";
@@ -214,7 +214,7 @@ export function DashboardScreen() {
   }
 
   return (
-    <View className="flex-1 bg-[#F5F0E8]">
+    <View className="flex-1 bg-rawbin-bg">
       <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
         {/* Watercolor Background Image */}
         <Image 
@@ -224,7 +224,7 @@ export function DashboardScreen() {
         />
         {/* Fading gradient overlay at bottom of image */}
         <View className="absolute w-full h-[550px] top-0 bg-white/10" />
-        <View className="absolute w-full h-32 top-[450px] bg-[#F5F0E8]" style={{ shadowColor: '#F5F0E8', shadowOffset: { width: 0, height: -30 }, shadowOpacity: 1, shadowRadius: 30, elevation: 10 }} />
+        <View className="absolute w-full h-32 top-[450px] bg-rawbin-bg" style={{ shadowColor: '#fff9e7', shadowOffset: { width: 0, height: -30 }, shadowOpacity: 1, shadowRadius: 30, elevation: 10 }} />
 
         <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
           
@@ -232,29 +232,29 @@ export function DashboardScreen() {
           <View className="flex-row items-start justify-between px-6 pt-2">
             {/* Left: Profile */}
             <View className="flex-row items-center space-x-3">
-              <View className="w-12 h-12 rounded-full bg-[#2D5016] items-center justify-center shadow-sm border border-[#2D5016]/20 overflow-hidden">
+              <View className="w-12 h-12 rounded-full bg-rawbin-primary items-center justify-center shadow-sm border border-rawbin-primary/20 overflow-hidden">
                 <Image 
-                  source={{ uri: `https://ui-avatars.com/api/?name=${userName}&background=2D5016&color=fff&size=128` }}
+                  source={{ uri: `https://ui-avatars.com/api/?name=${userName}&background=45B900&color=fff&size=128` }}
                   className="w-full h-full"
                 />
               </View>
               <View className="bg-white/80 px-3 py-1.5 rounded-xl shadow-sm">
-                <Text className="text-[#2D5016] text-[10px] font-nunito-bold uppercase tracking-wider">Hello,</Text>
-                <Text className="text-[#2D5016] font-nunito-black text-sm">{userName}</Text>
+                <Text className="text-rawbin-text text-[10px] font-nunito-bold uppercase tracking-wider">Hello,</Text>
+                <Text className="text-rawbin-text font-nunito-black text-sm">{userName}</Text>
               </View>
             </View>
 
             {/* Center: Home Title */}
             <View className="items-center absolute left-0 right-0 top-5" style={{ zIndex: -1 }}>
               <View className="items-center flex-col bg-white/80 px-4 py-1.5 rounded-2xl shadow-sm">
-                <Ionicons name={isSimulating ? "play" : "leaf"} size={14} color="#4A7C2F" />
-                <Text className="text-[#2D5016] font-nunito-bold text-sm mt-0.5">{isSimulating ? "Simulating" : "Home"}</Text>
+                <Ionicons name={isSimulating ? "play" : "leaf"} size={14} color="#744107" />
+                <Text className="text-rawbin-text font-nunito-bold text-sm mt-0.5">{isSimulating ? "Simulating" : "Home"}</Text>
               </View>
             </View>
 
             {/* Right: Controls */}
             <View className="space-y-3">
-              <TouchableOpacity onPress={() => navigation.navigate('Settings')} className="w-12 h-12 rounded-full bg-[#2D5016] items-center justify-center shadow-md">
+              <TouchableOpacity onPress={() => navigation.navigate('Settings')} className="w-12 h-12 rounded-full bg-rawbin-primary items-center justify-center shadow-md">
                 <Ionicons name="settings-sharp" size={24} color="white" />
               </TouchableOpacity>
               <TouchableOpacity 
@@ -262,9 +262,9 @@ export function DashboardScreen() {
                   setSimulatedDays(0);
                   setIsSimulating(true);
                 }} 
-                className="w-12 h-12 rounded-full bg-[#E8F0E0] items-center justify-center shadow-md"
+                className="w-12 h-12 rounded-full bg-rawbin-accent items-center justify-center shadow-md"
               >
-                <Ionicons name="play" size={24} color="#2D5016" />
+                <Ionicons name="play" size={24} color="#251605" />
               </TouchableOpacity>
             </View>
           </View>
@@ -273,27 +273,27 @@ export function DashboardScreen() {
           <View className="items-center mt-12">
             <View className="w-40 h-40 items-center justify-center relative bg-white rounded-full shadow-lg border border-[#ede7d7]">
               {isLoading ? (
-                <ActivityIndicator size="large" color="#4A7C2F" />
+                <ActivityIndicator size="large" color="#744107" />
               ) : (
                 <>
                   <CountdownRing 
                     size={160} 
                     strokeWidth={12} 
-                    activeColor="#4A7C2F" 
+                    activeColor="#45B900" 
                     inactiveColor="#d4d4ca" 
                     totalDays={30}
                     elapsedDays={elapsedDays}
                   />
                   
-                  <Text className="text-5xl font-nunito-black text-[#2D5016] pt-4 leading-tight">{daysRemaining}</Text>
-                  <Text className="text-[#4A7C2F] font-nunito-bold tracking-widest text-[10px]">DAYS</Text>
+                  <Text className="text-5xl font-nunito-black text-rawbin-text pt-4 leading-tight">{daysRemaining}</Text>
+                  <Text className="text-rawbin-subtext font-nunito-bold tracking-widest text-[10px]">DAYS</Text>
                   
                   <View className="mt-2">
                     {(() => {
-                      if (!hasActiveCycle) return <Ionicons name="add-circle-outline" size={22} color="#a69d92" />;
+                      if (!hasActiveCycle) return <Ionicons name="add-circle-outline" size={22} color="#e5a971" />;
                       if (elapsedDays < 10) return <Ionicons name="nutrition-outline" size={22} color="#8B4513" />; // Food waste
                       if (elapsedDays < 22) return <Ionicons name="sync" size={22} color="#B8860B" />; // Breaking down
-                      return <Ionicons name="leaf" size={22} color="#4A7C2F" />; // Ready compost
+                      return <Ionicons name="leaf" size={22} color="#744107" />; // Ready compost
                     })()}
                   </View>
                 </>
@@ -304,13 +304,13 @@ export function DashboardScreen() {
           {/* Status Label */}
           <View className="items-center mt-12">
             <View className="bg-white/95 px-6 py-3 rounded-2xl shadow-md border border-[#ede7d7]">
-              <Text className="text-[#2D5016] font-nunito-black tracking-widest text-sm text-center">
+              <Text className="text-rawbin-text font-nunito-black tracking-widest text-sm text-center">
                 {isLoading ? "LOADING..." : (!hasActiveCycle ? "ADD WASTE TO START" : `${daysRemaining} DAYS TO COMPOST REMAINING`)}
               </Text>
             </View>
             
             <View className="flex-row items-center bg-white/90 px-6 py-2.5 rounded-full mt-3 shadow-sm border border-[#ede7d7]">
-              <Text className="text-[#2D5016] font-nunito-bold text-[10px] tracking-wider mr-2">STATUS:</Text>
+              <Text className="text-rawbin-text font-nunito-bold text-[10px] tracking-wider mr-2">STATUS:</Text>
               <View className="w-3 h-3 rounded-full mr-2 shadow-sm" style={{ backgroundColor: statusColor }} />
               <Text className="font-nunito-bold text-[10px] tracking-wider" style={{ color: statusColor }}>{statusText}</Text>
             </View>
@@ -318,30 +318,30 @@ export function DashboardScreen() {
 
           {/* Stats Section */}
           <View className="px-6 mt-14">
-            <Text className="text-[#2D5016] font-nunito-black text-xl mb-1">Stats</Text>
-            <Text className="text-[#4A7C2F] font-nunito-bold text-[10px] tracking-widest mb-4 uppercase">LIFETIME IMPACT</Text>
+            <Text className="text-rawbin-text font-nunito-black text-xl mb-1">Stats</Text>
+            <Text className="text-rawbin-subtext font-nunito-bold text-[10px] tracking-widest mb-4 uppercase">LIFETIME IMPACT</Text>
 
             <View className="flex-row justify-between space-x-4">
               {/* Waste Reduced Card */}
               <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-[#ede7d7]">
                 <View className="flex-row items-center mb-3">
-                  <View className="w-10 h-10 rounded-full bg-[#F5F0E8] items-center justify-center mr-2 border border-[#d6cfc1]">
-                    <Ionicons name="leaf" size={20} color="#4A7C2F" />
+                  <View className="w-10 h-10 rounded-full bg-rawbin-bg items-center justify-center mr-2 border border-[#d6cfc1]">
+                    <Ionicons name="leaf" size={20} color="#744107" />
                   </View>
-                  <Text className="text-[#2D5016] font-nunito-bold text-[9px] flex-1 leading-tight uppercase">Waste Reduced</Text>
+                  <Text className="text-rawbin-text font-nunito-bold text-[9px] flex-1 leading-tight uppercase">Waste Reduced</Text>
                 </View>
-                <Text className="text-[#2D5016] font-nunito-black text-2xl text-center mt-1">{totalWasteKg.toFixed(1)} kg</Text>
+                <Text className="text-rawbin-text font-nunito-black text-2xl text-center mt-1">{totalWasteKg.toFixed(1)} kg</Text>
               </View>
 
               {/* CO2 Avoided Card */}
               <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-[#ede7d7]">
                 <View className="flex-row items-center mb-3">
-                  <View className="w-10 h-10 rounded-full bg-[#F5F0E8] items-center justify-center mr-2 border border-[#d6cfc1]">
-                    <Ionicons name="cloud-outline" size={20} color="#4A7C2F" />
+                  <View className="w-10 h-10 rounded-full bg-rawbin-bg items-center justify-center mr-2 border border-[#d6cfc1]">
+                    <Ionicons name="cloud-outline" size={20} color="#744107" />
                   </View>
-                  <Text className="text-[#2D5016] font-nunito-bold text-[9px] flex-1 leading-tight uppercase">CO2 Avoided</Text>
+                  <Text className="text-rawbin-text font-nunito-bold text-[9px] flex-1 leading-tight uppercase">CO2 Avoided</Text>
                 </View>
-                <Text className="text-[#2D5016] font-nunito-black text-2xl text-center mt-1">{co2Avoided} kg</Text>
+                <Text className="text-rawbin-text font-nunito-black text-2xl text-center mt-1">{co2Avoided} kg</Text>
               </View>
             </View>
           </View>
@@ -349,15 +349,15 @@ export function DashboardScreen() {
           {/* Streak Section */}
           <View className="mb-10 px-8 mt-10">
             <View className="flex-row items-center mb-3">
-              <Ionicons name="leaf" size={18} color="#4A7C2F" />
-              <Text className="text-[#2D5016] font-nunito-black text-xl ml-2">Streak</Text>
+              <Ionicons name="leaf" size={18} color="#744107" />
+              <Text className="text-rawbin-text font-nunito-black text-xl ml-2">Streak</Text>
             </View>
-            <Text className="text-[#4A7C2F] font-nunito-bold text-xs uppercase tracking-widest mb-4">Last 6 Months Compost Made</Text>
+            <Text className="text-rawbin-subtext font-nunito-bold text-xs uppercase tracking-widest mb-4">Last 6 Months Compost Made</Text>
             
             <View className="bg-white rounded-[24px] p-4 shadow-sm border border-[#ede7d7] overflow-visible">
               {isLoading ? (
                 <View className="h-[200px] items-center justify-center">
-                  <ActivityIndicator color="#4A7C2F" />
+                  <ActivityIndicator color="#744107" />
                 </View>
               ) : (
                 <View style={{ marginLeft: 5 }}>
@@ -408,13 +408,13 @@ export function DashboardScreen() {
                       strokeWidth: "2",
                       stroke: "#FFFFFF"
                     },
-                    fillShadowGradientFrom: "#4A7C2F",
+                    fillShadowGradientFrom: "#45B900",
                     fillShadowGradientFromOpacity: 0.3,
                     fillShadowGradientTo: "#FFFFFF",
                     fillShadowGradientToOpacity: 0.1,
                     propsForBackgroundLines: {
                       strokeDasharray: "0",
-                      stroke: "#F5F0E8",
+                      stroke: "#fff9e7",
                       strokeWidth: 1
                     }
                   }}

@@ -1,8 +1,8 @@
 import React, { useState, useRef } from 'react';
-import { View, Text, ScrollView, TextInput, TouchableOpacity, ImageBackground, ActivityIndicator, Platform } from 'react-native';
+import { View, Text, ScrollView, TextInput, TouchableOpacity, ImageBackground, ActivityIndicator, Platform, Image } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Audio } from 'expo-av';
+import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync } from 'expo-audio';
 import * as FileSystem from 'expo-file-system';
 import apiClient from '../api/client';
 
@@ -12,6 +12,7 @@ export function LibraryScreen() {
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
   const [recording, setRecording] = useState<any>(null);
+  const audioRecorder = useAudioRecorder(RecordingPresets.HIGH_QUALITY);
   const [result, setResult] = useState<any>(null);
   const debounceTimeout = useRef<ReturnType<typeof setTimeout> | null>(null);
   const mediaRecorder = useRef<any>(null);
@@ -60,13 +61,17 @@ export function LibraryScreen() {
         mediaRecorder.current.start();
         setRecording(true);
       } else {
-        await Audio.requestPermissionsAsync();
-        await Audio.setAudioModeAsync({
-          allowsRecordingIOS: true,
-          playsInSilentModeIOS: true,
+        const perm = await requestRecordingPermissionsAsync();
+        if (perm.status !== 'granted') {
+          throw new Error('Microphone access denied.');
+        }
+        await setAudioModeAsync({
+          allowsRecording: true,
+          playsInSilentMode: true,
         });
-        const { recording: newRecording } = await Audio.Recording.createAsync(Audio.RecordingOptionsPresets.HIGH_QUALITY);
-        setRecording(newRecording);
+        await audioRecorder.prepareToRecordAsync();
+        audioRecorder.record();
+        setRecording(audioRecorder);
       }
     } catch (err: any) {
       console.error('Failed to start recording', err);
@@ -85,9 +90,9 @@ export function LibraryScreen() {
     } else {
       setRecording(null);
       try {
-        await recording.stopAndUnloadAsync();
-        await Audio.setAudioModeAsync({ allowsRecordingIOS: false });
-        const uri = recording.getURI();
+        await audioRecorder.stop();
+        await setAudioModeAsync({ allowsRecording: false });
+        const uri = audioRecorder.uri;
         if (uri) {
           setIsProcessingVoice(true);
           const base64 = await FileSystem.readAsStringAsync(uri, { encoding: FileSystem.EncodingType.Base64 });
@@ -167,27 +172,27 @@ export function LibraryScreen() {
     const isYes = result.verdict === 'yes';
     const isNo = result.verdict === 'no';
 
-    let bgColor = isYes ? 'bg-[#E8F0E0]' : isNo ? 'bg-[#FFE5E5]' : 'bg-[#FFF9E6]';
-    let iconColor = isYes ? '#2D5016' : isNo ? '#C0392B' : '#B8860B';
+    let bgColor = isYes ? 'bg-rawbin-accent' : isNo ? 'bg-[#FFE5E5]' : 'bg-[#FFF9E6]';
+    let iconColor = isYes ? '#45B900' : isNo ? '#C0392B' : '#B8860B';
     let iconName = isYes ? 'checkmark-circle' : isNo ? 'close-circle' : 'warning';
     
     return (
       <View style={{ borderRadius: 16, padding: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', marginTop: 16, backgroundColor: isYes ? '#E8F0E0' : isNo ? '#FFE5E5' : '#FFF9E6' }}>
         <View className="flex-row items-center mb-3">
           <Ionicons name={iconName as any} size={28} color={iconColor} />
-          <Text className="text-[#2D5016] font-nunito-black text-xl ml-2 uppercase tracking-wide flex-1">{result.title}</Text>
+          <Text className="text-rawbin-text font-nunito-black text-xl ml-2 uppercase tracking-wide flex-1">{result.title}</Text>
         </View>
-        <Text className="text-[#2D5016] font-nunito text-sm leading-relaxed mb-3">{result.reason}</Text>
+        <Text className="text-rawbin-text font-nunito text-sm leading-relaxed mb-3">{result.reason}</Text>
         <View style={{ backgroundColor: 'rgba(255,255,255,0.6)', padding: 12, borderRadius: 12, marginBottom: 12 }}>
-          <Text className="text-[#2D5016] font-nunito-bold text-xs mb-1">💡 Pro Tip:</Text>
-          <Text className="text-[#2D5016] font-nunito text-xs leading-relaxed">{result.tip}</Text>
+          <Text className="text-rawbin-text font-nunito-bold text-xs mb-1">💡 Pro Tip:</Text>
+          <Text className="text-rawbin-text font-nunito text-xs leading-relaxed">{result.tip}</Text>
         </View>
         <View className="flex-row items-center justify-between">
           <View style={{ backgroundColor: 'rgba(255,255,255,0.8)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' }}>
-            <Text className="text-[#2D5016] font-nunito-bold text-[10px] uppercase tracking-widest">{result.badge}</Text>
+            <Text className="text-rawbin-text font-nunito-bold text-[10px] uppercase tracking-widest">{result.badge}</Text>
           </View>
           {result.breakdown_time && (
-            <Text className="text-[#4A7C2F] font-nunito-bold text-xs">⏱ {result.breakdown_time}</Text>
+            <Text className="text-rawbin-subtext font-nunito-bold text-xs">⏱ {result.breakdown_time}</Text>
           )}
         </View>
       </View>
@@ -205,10 +210,10 @@ export function LibraryScreen() {
           {/* Header */}
           <View className="px-6 pt-6 pb-4">
             <View className="flex-row items-center">
-              <Ionicons name="leaf" size={28} color="#2D5016" className="mr-2" />
-              <Text className="text-[#2D5016] font-nunito-black text-3xl ml-2">Can It Compost?</Text>
+              <Image source={require('../../assets/logo.png')} style={{ width: 32, height: 32, resizeMode: 'contain', marginRight: 8 }} />
+              <Text className="text-rawbin-text font-nunito-black text-3xl ml-2">Can It Compost?</Text>
             </View>
-            <Text className="text-[#4A7C2F] font-nunito-bold text-sm mt-1 ml-9">Check before you chuck</Text>
+            <Text className="text-rawbin-subtext font-nunito-bold text-sm mt-1 ml-9">Check before you chuck</Text>
           </View>
 
           {/* Tab Switcher */}
@@ -219,14 +224,14 @@ export function LibraryScreen() {
                 className="px-6 py-2 rounded-full"
                 style={activeTab === 'item' ? { backgroundColor: 'white', elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 } : {}}
               >
-                <Text className="font-nunito-bold text-xs" style={{ color: activeTab === 'item' ? '#2D5016' : '#8e8578' }}>By Item</Text>
+                <Text className="font-nunito-bold text-xs" style={{ color: activeTab === 'item' ? '#45B900' : '#8e8578' }}>By Item</Text>
               </TouchableOpacity>
               <TouchableOpacity 
                 onPress={() => setActiveTab('category')}
                 className="px-6 py-2 rounded-full"
                 style={activeTab === 'category' ? { backgroundColor: 'white', elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 } : {}}
               >
-                <Text className="font-nunito-bold text-xs" style={{ color: activeTab === 'category' ? '#2D5016' : '#8e8578' }}>By Category</Text>
+                <Text className="font-nunito-bold text-xs" style={{ color: activeTab === 'category' ? '#45B900' : '#8e8578' }}>By Category</Text>
               </TouchableOpacity>
             </View>
           </View>
@@ -237,10 +242,10 @@ export function LibraryScreen() {
               <>
                 {/* Search Bar */}
                 <View className="mb-2">
-                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#FDFAF5', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: recording ? '#FF3B30' : 'rgba(0,0,0,0.06)', elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 }}>
-                    <Ionicons name="search" size={20} color={recording ? "#FF3B30" : "#4A7C2F"} />
+                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: recording ? '#FF3B30' : 'rgba(0,0,0,0.06)', elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 }}>
+                    <Ionicons name="search" size={20} color={recording ? "#FF3B30" : "#45B900"} />
                     <TextInput 
-                      className="flex-1 ml-3 text-[#2D5016] font-nunito-bold"
+                      className="flex-1 ml-3 text-rawbin-text font-nunito-bold"
                       placeholder={recording ? "Listening..." : "Type any food item (e.g. Haddi)..."}
                       placeholderTextColor={recording ? "#FF3B30" : "#a69d92"}
                       value={searchQuery}
@@ -253,7 +258,7 @@ export function LibraryScreen() {
                       className="p-1"
                     >
                       {isProcessingVoice ? (
-                        <ActivityIndicator size="small" color="#4A7C2F" />
+                        <ActivityIndicator size="small" color="#744107" />
                       ) : (
                         <Ionicons name="mic" size={24} color={recording ? "#FF3B30" : "#a69d92"} />
                       )}
@@ -267,14 +272,14 @@ export function LibraryScreen() {
                 {/* Popular Checks */}
                 {!result && (
                   <View className="mt-8 mb-10">
-                    <Text className="text-[#4A7C2F] font-nunito-bold text-xs uppercase tracking-widest text-center mb-4">── Popular Checks ──</Text>
+                    <Text className="text-rawbin-subtext font-nunito-bold text-xs uppercase tracking-widest text-center mb-4">── Popular Checks ──</Text>
                     <View style={{ backgroundColor: 'rgba(253, 250, 245, 0.9)', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-                      <View className="w-[48%] mb-3 flex-row items-center"><Text>🟢</Text><Text className="text-[#2D5016] font-nunito ml-2 text-xs">Sabzi ke chilke</Text></View>
-                      <View className="w-[48%] mb-3 flex-row items-center"><Text>🔴</Text><Text className="text-[#2D5016] font-nunito ml-2 text-xs">Gosht (Meat)</Text></View>
-                      <View className="w-[48%] mb-3 flex-row items-center"><Text>🟢</Text><Text className="text-[#2D5016] font-nunito ml-2 text-xs">Coffee grounds</Text></View>
-                      <View className="w-[48%] mb-3 flex-row items-center"><Text>🔴</Text><Text className="text-[#2D5016] font-nunito ml-2 text-xs">Haddi (Bones)</Text></View>
-                      <View className="w-[48%] flex-row items-center"><Text>🟡</Text><Text className="text-[#2D5016] font-nunito ml-2 text-xs">Atta / Maida</Text></View>
-                      <View className="w-[48%] flex-row items-center"><Text>🟡</Text><Text className="text-[#2D5016] font-nunito ml-2 text-xs">Citrus peels</Text></View>
+                      <View className="w-[48%] mb-3 flex-row items-center"><Text>🟢</Text><Text className="text-rawbin-text font-nunito ml-2 text-xs">Sabzi ke chilke</Text></View>
+                      <View className="w-[48%] mb-3 flex-row items-center"><Text>🔴</Text><Text className="text-rawbin-text font-nunito ml-2 text-xs">Gosht (Meat)</Text></View>
+                      <View className="w-[48%] mb-3 flex-row items-center"><Text>🟢</Text><Text className="text-rawbin-text font-nunito ml-2 text-xs">Coffee grounds</Text></View>
+                      <View className="w-[48%] mb-3 flex-row items-center"><Text>🔴</Text><Text className="text-rawbin-text font-nunito ml-2 text-xs">Haddi (Bones)</Text></View>
+                      <View className="w-[48%] flex-row items-center"><Text>🟡</Text><Text className="text-rawbin-text font-nunito ml-2 text-xs">Atta / Maida</Text></View>
+                      <View className="w-[48%] flex-row items-center"><Text>🟡</Text><Text className="text-rawbin-text font-nunito ml-2 text-xs">Citrus peels</Text></View>
                     </View>
                   </View>
                 )}
@@ -286,13 +291,13 @@ export function LibraryScreen() {
                   <View className="w-[48%]">
                     <View style={{ backgroundColor: 'rgba(232, 240, 224, 0.9)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 12 }}>
                       <Text className="text-3xl mb-1">🥦</Text>
-                      <Text className="text-[#2D5016] font-nunito-bold text-sm">Veggie Scraps</Text>
-                      <Text className="text-[#4A7C2F] text-[10px] mt-1">Excellent Nitrogen</Text>
+                      <Text className="text-rawbin-text font-nunito-bold text-sm">Veggie Scraps</Text>
+                      <Text className="text-rawbin-subtext text-[10px] mt-1">Excellent Nitrogen</Text>
                     </View>
                     <View style={{ backgroundColor: 'rgba(232, 240, 224, 0.9)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 12 }}>
                       <Text className="text-3xl mb-1">🍌</Text>
-                      <Text className="text-[#2D5016] font-nunito-bold text-sm">Fruit Peels</Text>
-                      <Text className="text-[#4A7C2F] text-[10px] mt-1">Sweet Energy</Text>
+                      <Text className="text-rawbin-text font-nunito-bold text-sm">Fruit Peels</Text>
+                      <Text className="text-rawbin-subtext text-[10px] mt-1">Sweet Energy</Text>
                     </View>
                     <View style={{ backgroundColor: 'rgba(255, 249, 230, 0.9)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' }}>
                       <Text className="text-3xl mb-1">🍞</Text>
@@ -304,18 +309,18 @@ export function LibraryScreen() {
                   <View className="w-[48%]">
                     <View style={{ backgroundColor: 'rgba(255, 229, 229, 0.9)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 12 }}>
                       <Text className="text-3xl mb-1">🥩</Text>
-                      <Text className="text-[#C0392B] font-nunito-bold text-sm">Meat & Bones</Text>
+                      <Text className="text-rawbin-error font-nunito-bold text-sm">Meat & Bones</Text>
                       <Text style={{ color: 'rgba(192, 57, 43, 0.7)', fontSize: 10, marginTop: 4 }}>Attracts pests</Text>
                     </View>
                     <View style={{ backgroundColor: 'rgba(255, 229, 229, 0.9)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 12 }}>
                       <Text className="text-3xl mb-1">🧀</Text>
-                      <Text className="text-[#C0392B] font-nunito-bold text-sm">Dairy / Milk</Text>
+                      <Text className="text-rawbin-error font-nunito-bold text-sm">Dairy / Milk</Text>
                       <Text style={{ color: 'rgba(192, 57, 43, 0.7)', fontSize: 10, marginTop: 4 }}>Rots quickly</Text>
                     </View>
                     <View style={{ backgroundColor: 'rgba(232, 240, 224, 0.9)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' }}>
                       <Text className="text-3xl mb-1">📄</Text>
-                      <Text className="text-[#2D5016] font-nunito-bold text-sm">Paper / Cardboard</Text>
-                      <Text className="text-[#4A7C2F] text-[10px] mt-1">Great Carbon</Text>
+                      <Text className="text-rawbin-text font-nunito-bold text-sm">Paper / Cardboard</Text>
+                      <Text className="text-rawbin-subtext text-[10px] mt-1">Great Carbon</Text>
                     </View>
                   </View>
                 </View>

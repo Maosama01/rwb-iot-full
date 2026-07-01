@@ -162,15 +162,15 @@ export function RecipesScreen() {
       style={{ flex: 1 }}
       imageStyle={{ opacity: 0.15, resizeMode: 'cover' }}
     >
-      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-[#F5F0E8]/90">
+      <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} className="flex-1 bg-rawbin-bg/90">
         <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
           {/* Header */}
           <View className="px-6 pt-6 pb-2">
             <View className="flex-row items-center">
-              <Ionicons name="leaf-outline" size={28} color="#2D5016" className="mr-2" />
-              <Text className="text-[#2D5016] font-nunito-black text-3xl ml-2">SaveMyFood</Text>
+              <Image source={require('../../assets/logo.png')} style={{ width: 32, height: 32, resizeMode: 'contain', marginRight: 8 }} />
+              <Text className="text-rawbin-text font-nunito-black text-3xl ml-2">SaveMyFood</Text>
             </View>
-            <Text className="text-[#4A7C2F] font-nunito-bold text-sm mt-1 ml-9">Turn leftovers into something beautiful</Text>
+            <Text className="text-rawbin-subtext font-nunito-bold text-sm mt-1 ml-9">Turn leftovers into something beautiful</Text>
           </View>
 
           <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 40 }}>
@@ -180,45 +180,45 @@ export function RecipesScreen() {
                 
                 {capturedImageUri && (
                   <View className="mb-6 items-center">
-                     <Text className="text-[#2D5016] font-nunito-bold text-xs uppercase mb-3">Captured Image</Text>
+                     <Text className="text-rawbin-text font-nunito-bold text-xs uppercase mb-3">Captured Image</Text>
                      <Image 
                        source={{ uri: capturedImageUri }} 
                        className="w-full h-48 rounded-[16px] border border-[rgba(0,0,0,0.1)] shadow-sm"
                      />
                      {isScanning && (
                        <View className="absolute inset-0 bg-white/60 rounded-[16px] justify-center items-center">
-                         <ActivityIndicator size="large" color="#4A7C2F" />
-                         <Text className="text-[#2D5016] font-nunito-bold mt-2">AI is analyzing...</Text>
+                         <ActivityIndicator size="large" color="#744107" />
+                         <Text className="text-rawbin-text font-nunito-bold mt-2">AI is analyzing...</Text>
                        </View>
                      )}
                      <TouchableOpacity 
                        onPress={() => { setCapturedImageUri(null); setImageBase64(null); }}
                        className="mt-3"
                      >
-                       <Text className="text-[#C0392B] font-nunito-bold text-xs uppercase">Remove Photo</Text>
+                       <Text className="text-rawbin-error font-nunito-bold text-xs uppercase">Remove Photo</Text>
                      </TouchableOpacity>
                   </View>
                 )}
 
                 {!capturedImageUri && (
                   <>
-                    <Text className="text-[#2D5016] font-nunito-bold text-base mb-4 text-center">How do you want to start?</Text>
+                    <Text className="text-rawbin-text font-nunito-bold text-base mb-4 text-center">How do you want to start?</Text>
                     
                     <View className="flex-row justify-between mb-4">
                       <TouchableOpacity onPress={handleSnapFridge} className="w-[48%] bg-white/90 rounded-[16px] p-5 items-center shadow-sm border border-[rgba(0,0,0,0.06)]">
                         <Text className="text-3xl mb-2">📷</Text>
-                        <Text className="text-[#2D5016] font-nunito-bold text-sm text-center">Snap Your Fridge</Text>
+                        <Text className="text-rawbin-text font-nunito-bold text-sm text-center">Snap Your Fridge</Text>
                       </TouchableOpacity>
                       <TouchableOpacity onPress={() => setIsTyping(!isTyping)} className="w-[48%] bg-white/90 rounded-[16px] p-5 items-center shadow-sm border border-[rgba(0,0,0,0.06)]">
                         <Text className="text-3xl mb-2">✍️</Text>
-                        <Text className="text-[#2D5016] font-nunito-bold text-sm text-center">Type Your Leftovers</Text>
+                        <Text className="text-rawbin-text font-nunito-bold text-sm text-center">Type Your Leftovers</Text>
                       </TouchableOpacity>
                     </View>
 
                     {isTyping && (
-                      <View className="mb-4 bg-[#FDFAF5] rounded-[16px] px-4 py-3 shadow-sm border border-[rgba(0,0,0,0.06)] flex-row items-center">
+                      <View className="mb-4 bg-rawbin-card rounded-[16px] px-4 py-3 shadow-sm border border-[rgba(0,0,0,0.06)] flex-row items-center">
                         <TextInput 
-                          className="flex-1 text-[#2D5016] font-nunito-bold"
+                          className="flex-1 text-rawbin-text font-nunito-bold"
                           placeholder="e.g. apple, cheese, bread..."
                           placeholderTextColor="#a69d92"
                           value={inputText}
@@ -226,7 +226,7 @@ export function RecipesScreen() {
                           onSubmitEditing={() => addIngredient(inputText)}
                           returnKeyType="done"
                         />
-                        <TouchableOpacity onPress={() => addIngredient(inputText)} className="bg-[#4A7C2F] p-1 rounded-full">
+                        <TouchableOpacity onPress={() => addIngredient(inputText)} className="bg-rawbin-primary p-1 rounded-full">
                           <Ionicons name="add" size={20} color="white" />
                         </TouchableOpacity>
                       </View>
@@ -236,16 +236,16 @@ export function RecipesScreen() {
                 )}
 
                 <View className="mb-8">
-                  <Text className="text-[#2D5016] font-nunito text-xs mb-3">Added Items:</Text>
+                  <Text className="text-rawbin-text font-nunito text-xs mb-3">Added Items:</Text>
                   {ingredients.length === 0 ? (
-                    <Text className="text-[#a69d92] font-nunito text-sm italic">Nothing added yet.</Text>
+                    <Text className="text-rawbin-subtext font-nunito text-sm italic">Nothing added yet.</Text>
                   ) : (
                     <View className="flex-row flex-wrap gap-y-2">
                       {ingredients.map((ing, idx) => (
-                        <View key={idx} className="bg-white/90 px-4 py-2 rounded-full border border-[#4A7C2F]/20 flex-row items-center mr-2 shadow-sm">
-                          <Text className="text-[#2D5016] font-nunito-bold text-sm mr-2">{ing}</Text>
+                        <View key={idx} className="bg-white/90 px-4 py-2 rounded-full border border-rawbin-subtext/20 flex-row items-center mr-2 shadow-sm">
+                          <Text className="text-rawbin-text font-nunito-bold text-sm mr-2">{ing}</Text>
                           <TouchableOpacity onPress={() => removeIngredient(ing)}>
-                            <Ionicons name="close" size={16} color="#4A7C2F" />
+                            <Ionicons name="close" size={16} color="#744107" />
                           </TouchableOpacity>
                         </View>
                       ))}
@@ -255,15 +255,15 @@ export function RecipesScreen() {
 
                 <TouchableOpacity 
                   onPress={handleFindRecipes}
-                  className={`rounded-[16px] py-4 flex-row justify-center items-center shadow-sm ${ingredients.length > 0 ? 'bg-[#2D5016]' : 'bg-[#a69d92]'}`}
+                  className={`rounded-[16px] py-4 flex-row justify-center items-center shadow-sm ${ingredients.length > 0 ? 'bg-rawbin-primary' : 'bg-[#a69d92]'}`}
                   disabled={ingredients.length === 0 || isScanning}
                 >
                   {isFinding ? (
-                    <ActivityIndicator color="#F5F0E8" />
+                    <ActivityIndicator color="#fff9e7" />
                   ) : (
                     <>
-                      <Ionicons name="leaf" size={18} color="#F5F0E8" />
-                      <Text className="text-[#F5F0E8] font-nunito-black text-base ml-2">Find Recipes →</Text>
+                      <Ionicons name="leaf" size={18} color="#fff9e7" />
+                      <Text className="text-white font-nunito-black text-base ml-2">Find Recipes →</Text>
                     </>
                   )}
                 </TouchableOpacity>
@@ -271,37 +271,37 @@ export function RecipesScreen() {
             ) : (
               <View className="mt-6">
                 <View className="flex-row items-center justify-between mb-6">
-                  <Text className="text-[#4A7C2F] font-nunito-bold text-xs uppercase tracking-widest">── Recipes for you ──</Text>
+                  <Text className="text-rawbin-subtext font-nunito-bold text-xs uppercase tracking-widest">── Recipes for you ──</Text>
                   <TouchableOpacity onPress={resetFlow} className="bg-white/50 px-3 py-1 rounded-full border border-black/5">
-                    <Text className="text-[#2D5016] font-nunito-bold text-xs">← Start Over</Text>
+                    <Text className="text-rawbin-text font-nunito-bold text-xs">← Start Over</Text>
                   </TouchableOpacity>
                 </View>
 
                 {recipes.length === 0 ? (
-                  <Text className="text-[#2D5016] font-nunito-bold text-center mt-4">No recipes found. Try adding more ingredients!</Text>
+                  <Text className="text-rawbin-text font-nunito-bold text-center mt-4">No recipes found. Try adding more ingredients!</Text>
                 ) : (
                   recipes.map((recipe, index) => (
                     <TouchableOpacity key={index} onPress={() => setExpandedRecipe(expandedRecipe === index ? null : index)} className="bg-white/95 rounded-[24px] overflow-hidden shadow-sm border border-[rgba(0,0,0,0.06)] mb-4">
-                      <View className="bg-[#E8F0E0]/80 p-5 flex-row justify-between items-center">
+                      <View className="bg-rawbin-accent/80 p-5 flex-row justify-between items-center">
                         <View className="flex-1">
-                          <Text className="text-[#2D5016] font-nunito-black text-lg leading-tight mb-1">{recipe.title}</Text>
-                          <Text className="text-[#4A7C2F] font-nunito-bold text-[10px] uppercase">{recipe.tag}</Text>
+                          <Text className="text-rawbin-text font-nunito-black text-lg leading-tight mb-1">{recipe.title}</Text>
+                          <Text className="text-rawbin-subtext font-nunito-bold text-[10px] uppercase">{recipe.tag}</Text>
                         </View>
-                        <Ionicons name={expandedRecipe === index ? "chevron-up" : "chevron-down"} size={20} color="#2D5016" />
+                        <Ionicons name={expandedRecipe === index ? "chevron-up" : "chevron-down"} size={20} color="#251605" />
                       </View>
                       
                       {expandedRecipe === index && (
                         <>
                           <View className="p-5 border-b border-black/5">
-                            <Text className="text-[#2D5016] font-nunito-bold text-xs mb-2">Uses your items:</Text>
-                            <Text className="text-[#2D5016] font-nunito text-sm mb-4">✅ {recipe.uses_items.join('   ✅ ')}</Text>
-                            <Text className="text-[#2D5016] font-nunito-bold text-xs mb-2">You'll also need:</Text>
+                            <Text className="text-rawbin-text font-nunito-bold text-xs mb-2">Uses your items:</Text>
+                            <Text className="text-rawbin-text font-nunito text-sm mb-4">✅ {recipe.uses_items.join('   ✅ ')}</Text>
+                            <Text className="text-rawbin-text font-nunito-bold text-xs mb-2">You'll also need:</Text>
                             <Text className="text-[#604a36] font-nunito text-sm">{recipe.extra_items}</Text>
                           </View>
-                          <View className="flex-row justify-between p-5 border-b border-black/5 bg-[#FDFAF5]">
-                            <Text className="text-[#2D5016] font-nunito-bold text-xs">⏱ {recipe.time}</Text>
-                            <Text className="text-[#2D5016] font-nunito-bold text-xs">🍽 {recipe.servings}</Text>
-                            <Text className="text-[#2D5016] font-nunito-bold text-xs">🌱 {recipe.difficulty}</Text>
+                          <View className="flex-row justify-between p-5 border-b border-black/5 bg-rawbin-card">
+                            <Text className="text-rawbin-text font-nunito-bold text-xs">⏱ {recipe.time}</Text>
+                            <Text className="text-rawbin-text font-nunito-bold text-xs">🍽 {recipe.servings}</Text>
+                            <Text className="text-rawbin-text font-nunito-bold text-xs">🌱 {recipe.difficulty}</Text>
                           </View>
                           
                           <View className="px-5 py-3 border-b border-black/5 bg-white">
@@ -315,16 +315,16 @@ export function RecipesScreen() {
                           </View>
 
                           <View className="p-5 border-b border-black/5">
-                            <Text className="text-[#2D5016] font-nunito-bold text-xs mb-3">Instructions:</Text>
+                            <Text className="text-rawbin-text font-nunito-bold text-xs mb-3">Instructions:</Text>
                             {recipe.instructions.map((inst: string, i: number) => (
                               <Text key={i} className="text-[#604a36] font-nunito text-sm leading-relaxed mb-2">{inst}</Text>
                             ))}
                           </View>
-                          <View className="p-5 bg-[#E8F0E0]/30 flex-row items-start">
-                            <Ionicons name="heart" size={20} color="#4A7C2F" className="mt-1" />
+                          <View className="p-5 bg-rawbin-accent/30 flex-row items-start">
+                            <Ionicons name="heart" size={20} color="#744107" className="mt-1" />
                             <View className="ml-3 flex-1">
-                              <Text className="text-[#2D5016] font-nunito-bold text-sm mb-1">Compost tip:</Text>
-                              <Text className="text-[#2D5016] font-nunito text-xs leading-relaxed">{recipe.compost_tip}</Text>
+                              <Text className="text-rawbin-text font-nunito-bold text-sm mb-1">Compost tip:</Text>
+                              <Text className="text-rawbin-text font-nunito text-xs leading-relaxed">{recipe.compost_tip}</Text>
                             </View>
                           </View>
                         </>

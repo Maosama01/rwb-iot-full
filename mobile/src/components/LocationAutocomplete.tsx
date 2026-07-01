@@ -106,13 +106,13 @@ export function LocationAutocomplete({
 
   return (
     <View className="mb-4 relative z-50">
-      <Text className="text-[#2D5016] font-nunito-bold text-xs uppercase ml-1 mb-2">Location</Text>
+      <Text className="text-rawbin-text font-nunito-bold text-xs uppercase ml-1 mb-2">Location</Text>
       
       {/* COUNTRY */}
-      <View className="bg-[#FDFAF5] rounded-t-[16px] px-4 py-3 border border-[rgba(0,0,0,0.06)] border-b-0 flex-row items-center shadow-inner relative z-50">
-        <Ionicons name="earth-outline" size={20} color="#4A7C2F" />
+      <View className="bg-rawbin-card rounded-t-[16px] px-4 py-3 border border-[rgba(0,0,0,0.06)] border-b-0 flex-row items-center shadow-inner relative z-50">
+        <Ionicons name="earth-outline" size={20} color="#744107" />
         <TextInput 
-          className="flex-1 ml-3 text-[#2D5016] font-nunito-bold"
+          className="flex-1 ml-3 text-rawbin-text font-nunito-bold"
           placeholder="Country"
           placeholderTextColor="#a69d92"
           value={country}
@@ -127,10 +127,10 @@ export function LocationAutocomplete({
       </View>
 
       {/* STATE */}
-      <View className="bg-[#FDFAF5] px-4 py-3 border border-[rgba(0,0,0,0.06)] border-b-0 flex-row items-center shadow-inner relative z-40">
-        <Ionicons name="map-outline" size={20} color="#4A7C2F" />
+      <View className="bg-rawbin-card px-4 py-3 border border-[rgba(0,0,0,0.06)] border-b-0 flex-row items-center shadow-inner relative z-40">
+        <Ionicons name="map-outline" size={20} color="#744107" />
         <TextInput 
-          className="flex-1 ml-3 text-[#2D5016] font-nunito-bold"
+          className="flex-1 ml-3 text-rawbin-text font-nunito-bold"
           placeholder="State / Province"
           placeholderTextColor="#a69d92"
           value={state}
@@ -146,10 +146,10 @@ export function LocationAutocomplete({
       </View>
 
       {/* CITY */}
-      <View className="bg-[#FDFAF5] rounded-b-[16px] px-4 py-3 border border-[rgba(0,0,0,0.06)] flex-row items-center shadow-inner relative z-30">
-        <Ionicons name="location-outline" size={20} color="#4A7C2F" />
+      <View className="bg-rawbin-card rounded-b-[16px] px-4 py-3 border border-[rgba(0,0,0,0.06)] flex-row items-center shadow-inner relative z-30">
+        <Ionicons name="location-outline" size={20} color="#744107" />
         <TextInput 
-          className="flex-1 ml-3 text-[#2D5016] font-nunito-bold"
+          className="flex-1 ml-3 text-rawbin-text font-nunito-bold"
           placeholder="City"
           placeholderTextColor="#a69d92"
           value={city}
@@ -165,7 +165,7 @@ export function LocationAutocomplete({
             <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled={true}>
               {countrySuggestions.map((item) => (
                 <TouchableOpacity key={item.isoCode} className="px-4 py-3 border-b border-[rgba(0,0,0,0.03)]" onPress={() => handleCountrySelect(item)}>
-                  <Text className="text-[#2D5016] font-nunito-bold">{item.name}</Text>
+                  <Text className="text-rawbin-text font-nunito-bold">{item.name}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -174,7 +174,7 @@ export function LocationAutocomplete({
             <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled={true}>
               {stateSuggestions.map((item) => (
                 <TouchableOpacity key={item.isoCode} className="px-4 py-3 border-b border-[rgba(0,0,0,0.03)]" onPress={() => handleStateSelect(item)}>
-                  <Text className="text-[#2D5016] font-nunito-bold">{item.name}</Text>
+                  <Text className="text-rawbin-text font-nunito-bold">{item.name}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -183,7 +183,7 @@ export function LocationAutocomplete({
             <ScrollView keyboardShouldPersistTaps="handled" nestedScrollEnabled={true}>
               {citySuggestions.map((item, index) => (
                 <TouchableOpacity key={item.name + index} className="px-4 py-3 border-b border-[rgba(0,0,0,0.03)]" onPress={() => handleCitySelect(item)}>
-                  <Text className="text-[#2D5016] font-nunito-bold">{item.name}</Text>
+                  <Text className="text-rawbin-text font-nunito-bold">{item.name}</Text>
                 </TouchableOpacity>
               ))}
             </ScrollView>
@@ -191,10 +191,10 @@ export function LocationAutocomplete({
           
           {/* Helpful prompts if arrays are empty */}
           {activeField === 'state' && !selectedCountryCode && (
-             <Text className="px-4 py-3 text-[#a69d92] font-nunito-bold italic text-xs">Please select a country first to see states.</Text>
+             <Text className="px-4 py-3 text-rawbin-subtext font-nunito-bold italic text-xs">Please select a country first to see states.</Text>
           )}
           {activeField === 'city' && (!selectedCountryCode || !selectedStateCode) && (
-             <Text className="px-4 py-3 text-[#a69d92] font-nunito-bold italic text-xs">Please select a state first to see cities.</Text>
+             <Text className="px-4 py-3 text-rawbin-subtext font-nunito-bold italic text-xs">Please select a state first to see cities.</Text>
           )}
         </View>
       )}
