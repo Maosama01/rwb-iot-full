@@ -1,9 +1,8 @@
-import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator } from 'react-native';
+import React, { useEffect, useState, useRef } from 'react';
+import { View, Text, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, StyleSheet, Platform, Animated as RNAnimated } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LineChart } from 'react-native-chart-kit';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, G, Mask } from 'react-native-svg';
+import Svg, { Circle, G, Rect, Defs, LinearGradient, Stop } from 'react-native-svg';
 import { useNavigation } from '@react-navigation/native';
 import apiClient from '../api/client';
 
@@ -19,26 +18,31 @@ interface WasteLog {
 }
 
 const screenWidth = Dimensions.get('window').width;
+const AnimatedCircle = RNAnimated.createAnimatedComponent(Circle);
 
-// 14-Day Cycle Countdown Ring (Not a spinner)
-const CountdownRing = ({ size, strokeWidth, activeColor, inactiveColor, totalDays, elapsedDays }) => {
+// Continuous 30-Day Cycle Countdown Ring with Animation & Soft styling
+const CountdownRing = ({ size, strokeWidth, activeColor, inactiveColor, totalDays, elapsedDays }: any) => {
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
-  // We want exact dashes for days. Let's use 28 dashes (2 per day) for better visual density, or 14 dashes.
-  // 14 dashes:
-  const numDashes = 28; 
-  const dashLength = circumference / numDashes * 0.7; // 70% dash, 30% gap
-  const gapLength = circumference / numDashes * 0.3;
-  const dashArray = `${dashLength} ${gapLength}`;
   
   const progress = elapsedDays / totalDays;
-  const strokeDashoffset = circumference - (progress * circumference);
+  const targetOffset = Math.max(0, circumference - (progress * circumference));
+
+  const animatedOffset = useRef(new RNAnimated.Value(circumference)).current;
+
+  useEffect(() => {
+    RNAnimated.timing(animatedOffset, {
+      toValue: targetOffset,
+      duration: 1000,
+      useNativeDriver: false,
+    }).start();
+  }, [targetOffset]);
 
   return (
     <View style={{ width: size, height: size, position: 'absolute' }}>
       <Svg width={size} height={size}>
         <G rotation="-90" origin={`${size/2}, ${size/2}`}>
-          {/* Background inactive dashed circle */}
+          {/* Background solid inactive track - soft neutral */}
           <Circle
             cx={size / 2}
             cy={size / 2}
@@ -46,36 +50,93 @@ const CountdownRing = ({ size, strokeWidth, activeColor, inactiveColor, totalDay
             stroke={inactiveColor}
             strokeWidth={strokeWidth}
             fill="transparent"
-            strokeDasharray={dashArray}
           />
           
-          {/* Foreground active dashed circle (masked by solid progress circle) */}
-          <Mask id="countdownMask">
-            <Circle
-              cx={size / 2}
-              cy={size / 2}
-              r={radius}
-              stroke="white"
-              strokeWidth={strokeWidth + 2}
-              fill="transparent"
-              strokeDasharray={circumference}
-              strokeDashoffset={strokeDashoffset}
-              strokeLinecap="butt"
-            />
-          </Mask>
-          
-          <Circle
+          {/* Foreground animated active track */}
+          <AnimatedCircle
             cx={size / 2}
             cy={size / 2}
             r={radius}
             stroke={activeColor}
             strokeWidth={strokeWidth}
             fill="transparent"
-            strokeDasharray={dashArray}
-            mask="url(#countdownMask)"
+            strokeDasharray={circumference}
+            strokeDashoffset={animatedOffset}
+            strokeLinecap="round"
           />
         </G>
       </Svg>
+    </View>
+  );
+};
+
+// Custom SVG Consistency Chart (6 months)
+const CustomConsistencyChart = () => {
+  const chartHeight = 90; 
+  const barWidth = 12; 
+  
+  // Data modeling 6 months of consistency
+  const data = [
+    { label: 'Jan', value: 40 },
+    { label: 'Feb', value: 55 },
+    { label: 'Mar', value: 65 },
+    { label: 'Apr', value: 50 },
+    { label: 'May', value: 60 },
+    { label: 'Jun', value: 100 },
+  ];
+  
+  // Distribute spacing perfectly
+  const availableWidth = screenWidth - 48 - 48; // padding outer and card inner padding
+  const totalBarWidths = data.length * barWidth;
+  const spacing = (availableWidth - totalBarWidths) / (data.length - 1);
+  const maxVal = 100;
+
+  return (
+    <View style={styles.chartWrapper}>
+      <Svg width={availableWidth} height={chartHeight}>
+        <Defs>
+          <LinearGradient id="activeGrad" x1="0" y1="0" x2="0" y2="1">
+            <Stop offset="0" stopColor="#63B32E" stopOpacity="1" />
+            <Stop offset="1" stopColor="#63B32E" stopOpacity="0.8" />
+          </LinearGradient>
+        </Defs>
+        {data.map((item, index) => {
+          const barHeight = (item.value / maxVal) * chartHeight;
+          const x = index * (barWidth + spacing);
+          const y = chartHeight - barHeight;
+          const isActive = index === data.length - 1;
+
+          return (
+            <G key={item.label}>
+              <Rect
+                x={x}
+                y={y}
+                width={barWidth}
+                height={barHeight}
+                rx={6}
+                ry={6}
+                fill={isActive ? 'url(#activeGrad)' : '#EDF8E8'}
+              />
+            </G>
+          );
+        })}
+      </Svg>
+      <View style={[styles.chartLabels, { width: availableWidth }]}>
+        {data.map((item, index) => (
+          <Text 
+            key={item.label} 
+            style={[
+              styles.chartLabelText, 
+              { 
+                color: index === data.length - 1 ? '#222222' : '#999999', 
+                fontWeight: index === data.length - 1 ? '700' : '400' 
+              }
+            ]}
+          >
+            {item.label}
+          </Text>
+        ))}
+      </View>
     </View>
   );
 };
@@ -92,27 +153,21 @@ export function DashboardScreen() {
   // Real data state
   const [predictive, setPredictive] = useState<PredictiveData | null>(null);
   const [totalWasteKg, setTotalWasteKg] = useState<number>(0);
-  const [streakLabels, setStreakLabels] = useState<string[]>(["Jan", "Feb", "Mar", "Apr", "May", "Jun"]);
-  const [streakData, setStreakData] = useState<number[]>([0, 0, 0, 0, 0, 0]);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
         setIsLoading(true);
-        // 1. Fetch user profile
         const userRes = await apiClient.get('/users/me');
         if (userRes.data?.display_name) {
           setUserName(userRes.data.display_name);
         }
 
-        // 2. Fetch accessible devices
         const devicesRes = await apiClient.get('/devices/');
         const devices = devicesRes.data;
         
         if (devices && devices.length > 0) {
           const mainDeviceId = devices[0].id;
-          
-          // 3. Fetch Predictive Insights & Waste Logs concurrently
           const [predictiveRes, wasteRes] = await Promise.all([
             apiClient.get(`/analytics/predictive/${mainDeviceId}`),
             apiClient.get(`/devices/${mainDeviceId}/waste-logs?limit=200`)
@@ -120,38 +175,13 @@ export function DashboardScreen() {
           
           setPredictive(predictiveRes.data);
           
-          // 4. Process Waste Logs
           const logs: WasteLog[] = wasteRes.data.items || [];
-          
           let totalWeight = 0;
-          const monthlyMap: Record<string, number> = {};
-          
           logs.forEach(log => {
             totalWeight += log.weight_kg;
-            
-            const date = new Date(log.logged_at);
-            // "Jan", "Feb", etc.
-            const monthStr = date.toLocaleString('default', { month: 'short' });
-            monthlyMap[monthStr] = (monthlyMap[monthStr] || 0) + log.weight_kg;
           });
           
           setTotalWasteKg(totalWeight);
-          
-          // Build chart data for the last 6 months based on current month
-          const currentMonth = new Date().getMonth(); // 0-11
-          const labels: string[] = [];
-          const data: number[] = [];
-          
-          for (let i = 5; i >= 0; i--) {
-            const d = new Date();
-            d.setMonth(currentMonth - i);
-            const m = d.toLocaleString('default', { month: 'short' });
-            labels.push(m);
-            data.push(monthlyMap[m] || 0);
-          }
-          
-          setStreakLabels(labels);
-          setStreakData(data);
         }
       } catch (error) {
         console.log('Failed to fetch dashboard data:', error);
@@ -163,276 +193,694 @@ export function DashboardScreen() {
     fetchDashboardData();
   }, []);
 
-  // Simulator Effect
   useEffect(() => {
-    let interval: NodeJS.Timeout;
+    let interval: ReturnType<typeof setInterval>;
     if (isSimulating) {
       interval = setInterval(() => {
         setSimulatedDays(prev => {
           if (prev >= 30) {
             setIsSimulating(false);
-            return 30; // Stop at 30
+            return 30;
           }
           return prev + 1;
         });
-      }, 500); // Half a second per day
+      }, 500); 
     }
     return () => clearInterval(interval);
   }, [isSimulating]);
 
   // Derived values
-  const hasActiveCycle = isSimulating ? true : !!(predictive && predictive.phase_started_at);
+  const hasActiveCycle = isSimulating ? true : !!(predictive && (predictive as any).phase_started_at);
   const realDaysRemaining = predictive?.estimated_days_remaining ?? 0;
   
   const elapsedDays = isSimulating 
     ? simulatedDays 
     : (hasActiveCycle ? Math.max(0, 30 - realDaysRemaining) : 0);
     
-  const daysRemaining = Math.max(0, 30 - elapsedDays);
-  const co2Avoided = (totalWasteKg * 1.5).toFixed(1); // Standard 1.5x multiplier
+  const daysRemaining = Math.max(0, 30 - Math.floor(elapsedDays));
+  const co2Avoided = (totalWasteKg * 1.5).toFixed(1);
+
+  const getPhaseInfo = (days: number) => {
+    if (days === 0 && !hasActiveCycle) return { pill: 'Ready', phaseText: 'Waiting for Food Waste', phaseIcon: 'leaf' };
+    if (days < 5) return { pill: 'Preparing', phaseText: 'Phase 1 of 4 • Heating', phaseIcon: 'thermometer' };
+    if (days < 15) return { pill: 'Composting', phaseText: 'Phase 2 of 4 • Active', phaseIcon: 'sync' };
+    if (days < 25) return { pill: 'Drying', phaseText: 'Phase 3 of 4 • Drying', phaseIcon: 'sunny' };
+    if (days < 30) return { pill: 'Cooling', phaseText: 'Phase 4 of 4 • Cooling', phaseIcon: 'snow' };
+    return { pill: 'Finished', phaseText: 'Ready to harvest', phaseIcon: 'checkmark-circle' };
+  };
+
+  const phaseInfo = getPhaseInfo(elapsedDays);
   
-  // Status logic based on health score
-  let healthScore = predictive?.health_score ?? 100;
-  if (isSimulating) {
-    if (elapsedDays < 10) healthScore = 100;
-    else if (elapsedDays < 20) healthScore = 75; // show yellow midway
-    else healthScore = 95;
-  }
-  
-  let statusText = "ALL GOING WELL";
-  let statusColor = "#45B900"; // Green
-  
-  if (!hasActiveCycle) {
-    statusText = "READY TO START";
-    statusColor = "#a69d92"; // Grey
-  } else if (healthScore < 50) {
-    statusText = "NEEDS ATTENTION";
-    statusColor = "#C0392B"; // Red
-  } else if (healthScore < 80) {
-    statusText = "FAIR CONDITIONS";
-    statusColor = "#B8860B"; // Yellow/Gold
-  }
+  const hour = new Date().getHours();
+  const greetingTime = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
 
   return (
-    <View className="flex-1 bg-rawbin-bg">
-      <ScrollView className="flex-1" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 60 }}>
-        {/* Watercolor Background Image */}
-        <Image 
-          source={require('../../assets/dashboard_bg.png')} 
-          className="absolute w-full h-[550px] top-0 opacity-100"
-          resizeMode="cover"
-        />
-        {/* Fading gradient overlay at bottom of image */}
-        <View className="absolute w-full h-[550px] top-0 bg-white/10" />
-        <View className="absolute w-full h-32 top-[450px] bg-rawbin-bg" style={{ shadowColor: '#fff9e7', shadowOffset: { width: 0, height: -30 }, shadowOpacity: 1, shadowRadius: 30, elevation: 10 }} />
+    <SafeAreaView style={styles.container}>
+      {/* New Dedicated Background Image generated matching spec */}
+      <Image 
+        source={require('../../assets/background_dashboard.png')} 
+        style={styles.fullScreenBgImage}
+      />
 
-        <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
-          
-          {/* Header Bar */}
-          <View className="flex-row items-start justify-between px-6 pt-2">
-            {/* Left: Profile */}
-            <View className="flex-row items-center space-x-3">
-              <View className="w-12 h-12 rounded-full bg-rawbin-primary items-center justify-center shadow-sm border border-rawbin-primary/20 overflow-hidden">
-                <Image 
-                  source={{ uri: `https://ui-avatars.com/api/?name=${userName}&background=45B900&color=fff&size=128` }}
-                  className="w-full h-full"
-                />
-              </View>
-              <View className="bg-white/80 px-3 py-1.5 rounded-xl shadow-sm">
-                <Text className="text-rawbin-text text-[10px] font-nunito-bold uppercase tracking-wider">Hello,</Text>
-                <Text className="text-rawbin-text font-nunito-black text-sm">{userName}</Text>
-              </View>
+      <ScrollView contentContainerStyle={styles.scrollContent} showsVerticalScrollIndicator={false}>
+        
+        {/* --- Header Section --- */}
+        <View style={styles.header}>
+          <View style={styles.greetingRow}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 2 }}>
+              <Ionicons name="leaf" size={14} color="#63B32E" style={{ marginRight: 6 }} />
+              <Text style={styles.greeting}>Hello,</Text>
             </View>
+            <Text style={styles.name}>{userName}</Text>
+            <Text style={styles.subGreeting}>{greetingTime}</Text>
+          </View>
 
-            {/* Center: Home Title */}
-            <View className="items-center absolute left-0 right-0 top-5" style={{ zIndex: -1 }}>
-              <View className="items-center flex-col bg-white/80 px-4 py-1.5 rounded-2xl shadow-sm">
-                <Ionicons name={isSimulating ? "play" : "leaf"} size={14} color="#744107" />
-                <Text className="text-rawbin-text font-nunito-bold text-sm mt-0.5">{isSimulating ? "Simulating" : "Home"}</Text>
-              </View>
-            </View>
-
-            {/* Right: Controls */}
-            <View className="space-y-3">
-              <TouchableOpacity onPress={() => navigation.navigate('Settings')} className="w-12 h-12 rounded-full bg-rawbin-primary items-center justify-center shadow-md">
-                <Ionicons name="settings-sharp" size={24} color="white" />
+          <View style={styles.headerRight}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <TouchableOpacity style={styles.simulatingBadge}>
+                <Ionicons name={phaseInfo.phaseIcon as any} size={14} color="#214F25" style={{ marginRight: 6 }} />
+                <Text style={styles.simulatingText}>{phaseInfo.pill}</Text>
               </TouchableOpacity>
-              <TouchableOpacity 
-                onPress={() => {
-                  setSimulatedDays(0);
-                  setIsSimulating(true);
-                }} 
-                className="w-12 h-12 rounded-full bg-rawbin-accent items-center justify-center shadow-md"
-              >
-                <Ionicons name="play" size={24} color="#251605" />
+              
+              <TouchableOpacity style={styles.settingsButton}>
+                <Ionicons name="settings-sharp" size={20} color="#214F25" />
               </TouchableOpacity>
             </View>
-          </View>
-
-          {/* Main Progress Dial */}
-          <View className="items-center mt-12">
-            <View className="w-40 h-40 items-center justify-center relative bg-white rounded-full shadow-lg border border-[#ede7d7]">
-              {isLoading ? (
-                <ActivityIndicator size="large" color="#744107" />
-              ) : (
-                <>
-                  <CountdownRing 
-                    size={160} 
-                    strokeWidth={12} 
-                    activeColor="#45B900" 
-                    inactiveColor="#d4d4ca" 
-                    totalDays={30}
-                    elapsedDays={elapsedDays}
-                  />
-                  
-                  <Text className="text-5xl font-nunito-black text-rawbin-text pt-4 leading-tight">{daysRemaining}</Text>
-                  <Text className="text-rawbin-subtext font-nunito-bold tracking-widest text-[10px]">DAYS</Text>
-                  
-                  <View className="mt-2">
-                    {(() => {
-                      if (!hasActiveCycle) return <Ionicons name="add-circle-outline" size={22} color="#e5a971" />;
-                      if (elapsedDays < 10) return <Ionicons name="nutrition-outline" size={22} color="#8B4513" />; // Food waste
-                      if (elapsedDays < 22) return <Ionicons name="sync" size={22} color="#B8860B" />; // Breaking down
-                      return <Ionicons name="leaf" size={22} color="#744107" />; // Ready compost
-                    })()}
-                  </View>
-                </>
-              )}
-            </View>
-          </View>
-
-          {/* Status Label */}
-          <View className="items-center mt-12">
-            <View className="bg-white/95 px-6 py-3 rounded-2xl shadow-md border border-[#ede7d7]">
-              <Text className="text-rawbin-text font-nunito-black tracking-widest text-sm text-center">
-                {isLoading ? "LOADING..." : (!hasActiveCycle ? "ADD WASTE TO START" : `${daysRemaining} DAYS TO COMPOST REMAINING`)}
-              </Text>
-            </View>
             
-            <View className="flex-row items-center bg-white/90 px-6 py-2.5 rounded-full mt-3 shadow-sm border border-[#ede7d7]">
-              <Text className="text-rawbin-text font-nunito-bold text-[10px] tracking-wider mr-2">STATUS:</Text>
-              <View className="w-3 h-3 rounded-full mr-2 shadow-sm" style={{ backgroundColor: statusColor }} />
-              <Text className="font-nunito-bold text-[10px] tracking-wider" style={{ color: statusColor }}>{statusText}</Text>
-            </View>
-          </View>
-
-          {/* Stats Section */}
-          <View className="px-6 mt-14">
-            <Text className="text-rawbin-text font-nunito-black text-xl mb-1">Stats</Text>
-            <Text className="text-rawbin-subtext font-nunito-bold text-[10px] tracking-widest mb-4 uppercase">LIFETIME IMPACT</Text>
-
-            <View className="flex-row justify-between space-x-4">
-              {/* Waste Reduced Card */}
-              <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-[#ede7d7]">
-                <View className="flex-row items-center mb-3">
-                  <View className="w-10 h-10 rounded-full bg-rawbin-bg items-center justify-center mr-2 border border-[#d6cfc1]">
-                    <Ionicons name="leaf" size={20} color="#744107" />
-                  </View>
-                  <Text className="text-rawbin-text font-nunito-bold text-[9px] flex-1 leading-tight uppercase">Waste Reduced</Text>
-                </View>
-                <Text className="text-rawbin-text font-nunito-black text-2xl text-center mt-1">{totalWasteKg.toFixed(1)} kg</Text>
-              </View>
-
-              {/* CO2 Avoided Card */}
-              <View className="flex-1 bg-white rounded-2xl p-4 shadow-sm border border-[#ede7d7]">
-                <View className="flex-row items-center mb-3">
-                  <View className="w-10 h-10 rounded-full bg-rawbin-bg items-center justify-center mr-2 border border-[#d6cfc1]">
-                    <Ionicons name="cloud-outline" size={20} color="#744107" />
-                  </View>
-                  <Text className="text-rawbin-text font-nunito-bold text-[9px] flex-1 leading-tight uppercase">CO2 Avoided</Text>
-                </View>
-                <Text className="text-rawbin-text font-nunito-black text-2xl text-center mt-1">{co2Avoided} kg</Text>
-              </View>
-            </View>
-          </View>
-
-          {/* Streak Section */}
-          <View className="mb-10 px-8 mt-10">
-            <View className="flex-row items-center mb-3">
-              <Ionicons name="leaf" size={18} color="#744107" />
-              <Text className="text-rawbin-text font-nunito-black text-xl ml-2">Streak</Text>
-            </View>
-            <Text className="text-rawbin-subtext font-nunito-bold text-xs uppercase tracking-widest mb-4">Last 6 Months Compost Made</Text>
-            
-            <View className="bg-white rounded-[24px] p-4 shadow-sm border border-[#ede7d7] overflow-visible">
-              {isLoading ? (
-                <View className="h-[200px] items-center justify-center">
-                  <ActivityIndicator color="#744107" />
-                </View>
-              ) : (
-                <View style={{ marginLeft: 5 }}>
-                  {(() => {
-                    const actualMax = Math.max(...(streakData.length > 0 ? streakData : [0]));
-                    const yMax = Math.max(20, Math.ceil(actualMax / 20) * 20);
-                    const maxDataset = streakLabels.map(() => yMax);
-                    
-                    return (
-                      <LineChart
-                        data={{
-                          labels: streakLabels,
-                          datasets: [
-                            {
-                              data: streakData.length > 0 && streakData.some(d => d > 0) ? streakData : streakLabels.map(() => 0),
-                            },
-                            {
-                              data: maxDataset,
-                              withDots: false,
-                              color: () => 'transparent', // Invisible line to force scale
-                              strokeWidth: 0,
-                            }
-                          ]
-                        }}
-                      segments={4}
-                      width={screenWidth - 96}
-                  height={200}
-                  yAxisSuffix=" kg"
-                  yAxisInterval={1} 
-                  fromZero={true}
-                  withInnerLines={true}
-                  withOuterLines={false}
-                  withVerticalLines={false}
-                  withHorizontalLines={true}
-                  withVerticalLabels={true}
-                  chartConfig={{
-                    backgroundColor: "#FFFFFF",
-                    backgroundGradientFrom: "#FFFFFF",
-                    backgroundGradientTo: "#FFFFFF",
-                    decimalPlaces: 0, 
-                    color: (opacity = 1) => `rgba(74, 124, 47, ${opacity})`,
-                    labelColor: (opacity = 1) => `rgba(45, 80, 22, ${opacity})`,
-                    style: {
-                      borderRadius: 16
-                    },
-                    propsForDots: {
-                      r: "4", 
-                      strokeWidth: "2",
-                      stroke: "#FFFFFF"
-                    },
-                    fillShadowGradientFrom: "#45B900",
-                    fillShadowGradientFromOpacity: 0.3,
-                    fillShadowGradientTo: "#FFFFFF",
-                    fillShadowGradientToOpacity: 0.1,
-                    propsForBackgroundLines: {
-                      strokeDasharray: "0",
-                      stroke: "#fff9e7",
-                      strokeWidth: 1
-                    }
-                  }}
-                  bezier
-                  style={{
-                    marginVertical: 8,
-                    borderRadius: 16,
-                  }}
-                />
-              );
-            })()}
-            </View>
-            )}
+            <TouchableOpacity 
+              style={styles.playButton} 
+              onPress={() => {
+                setSimulatedDays(0);
+                setIsSimulating(true);
+              }}
+            >
+              <Ionicons name="play" size={20} color="#63B32E" style={{ marginLeft: 2 }} />
+            </TouchableOpacity>
           </View>
         </View>
 
-        </SafeAreaView>
+        {/* --- Hero Progress Section --- */}
+        <View style={styles.heroSection}>
+          {isLoading ? (
+            <ActivityIndicator size="large" color="#63B32E" />
+          ) : (
+            <View style={styles.progressCircleContainer}>
+              {/* Outer soft ambient shadow for the ring */}
+              <View style={styles.progressCircleOuterGlow} />
+              
+              <View style={styles.svgRingContainer}>
+                <CountdownRing 
+                  size={240} 
+                  strokeWidth={16} 
+                  activeColor="#63B32E" 
+                  inactiveColor="#F0F0F0" 
+                  totalDays={30}
+                  elapsedDays={elapsedDays}
+                />
+              </View>
+              
+              {/* Inner subtle shadow layer */}
+              <View style={styles.progressCircleInner} />
+              
+              <View style={styles.progressCircle}>
+                <Text style={styles.compostingLabel}>COMPOSTING</Text>
+                <Text style={styles.daysNumber}>{daysRemaining}</Text>
+                <Text style={styles.daysLabel}>Days Remaining</Text>
+                <View style={styles.phaseDivider} />
+                <View style={{flexDirection: 'row', alignItems: 'center'}}>
+                  <Ionicons name={phaseInfo.phaseIcon as any} size={12} color="#63B32E" style={{marginRight: 6}} />
+                  <Text style={styles.phaseText}>{phaseInfo.phaseText}</Text>
+                </View>
+              </View>
+            </View>
+          )}
+
+          {/* Machine Status Card */}
+          <View style={styles.statusCard}>
+            <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
+              <View style={styles.statusCardIconBg}>
+                <Ionicons name="leaf-outline" size={24} color="#63B32E" />
+              </View>
+              <View style={{ marginLeft: 16 }}>
+                <Text style={styles.statusCardHeaderLabel}>MACHINE STATUS</Text>
+                <Text style={styles.statusCardTitle}>
+                  {!hasActiveCycle ? "Ready to Start" : "Cycle Active"}
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.statusCardTextContainer}>
+              <Text style={styles.statusCardSubtext}>
+                {!hasActiveCycle 
+                  ? "Your Rawbin is waiting for food waste." 
+                  : "Machine is actively neutralizing pathogens."}
+              </Text>
+            </View>
+            
+            {/* Compact System Info Row */}
+            <View style={styles.compactStatusRow}>
+              <View style={styles.compactStatusItem}>
+                <Text style={styles.compactStatusLabel}>Status</Text>
+                <View style={styles.statusDot} />
+                <Text style={styles.compactStatusValue}>{!hasActiveCycle ? 'Ready' : 'Running'}</Text>
+              </View>
+              <View style={styles.compactStatusDivider} />
+              <View style={styles.compactStatusItem}>
+                <Text style={styles.compactStatusLabel}>Humidity</Text>
+                <Text style={styles.compactStatusValue}>{!hasActiveCycle ? '48%' : '30%'}</Text>
+              </View>
+            </View>
+            <Text style={styles.sysSync}>Last Synced: Just now</Text>
+          </View>
+        </View>
+
+        {/* --- Lifetime Impact Section --- */}
+        <View style={styles.sectionTitleContainer}>
+          <Text style={styles.sectionTitle}>Lifetime Impact</Text>
+          <View style={styles.titleUnderline} />
+        </View>
+        
+        <View style={styles.impactContainer}>
+          <View style={styles.impactCard}>
+            <View style={styles.impactIconContainer}>
+              <Ionicons name="leaf-outline" size={28} color="#63B32E" />
+            </View>
+            <Text style={styles.impactCardTitle}>Waste Reduced</Text>
+            <Text style={styles.impactValue}>{totalWasteKg.toFixed(1)} <Text style={{fontSize: 16}}>kg</Text></Text>
+            <Text style={styles.impactSubtext}>Total waste kept out of landfill</Text>
+          </View>
+          
+          <View style={styles.impactCard}>
+            <View style={styles.impactIconContainer}>
+              <Ionicons name="cloud-outline" size={28} color="#63B32E" />
+            </View>
+            <Text style={styles.impactCardTitle}>CO₂ Avoided</Text>
+            <Text style={styles.impactValue}>{co2Avoided} <Text style={{fontSize: 16}}>kg</Text></Text>
+            <Text style={styles.impactSubtext}>Greenhouse gases kept from emitting</Text>
+          </View>
+        </View>
+
+        {/* --- Consistency Section --- */}
+        <View style={[styles.sectionTitleContainer, { marginTop: 48 }]}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 8 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={styles.trophyBadge}>
+                <Ionicons name="trophy" size={16} color="#63B32E" />
+              </View>
+              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Consistency</Text>
+            </View>
+            
+            <View style={styles.keepItUpBadge}>
+              <Ionicons name="trophy-outline" size={12} color="#63B32E" style={{marginRight: 4}} />
+              <Text style={styles.keepItUpText}>Keep it up!</Text>
+            </View>
+          </View>
+        </View>
+
+        <View style={styles.consistencyCard}>
+          <Text style={styles.consistencySubtitle}>Last 6 Months</Text>
+          <CustomConsistencyChart />
+        </View>
+        
+        {/* --- Share Streak Section (New) --- */}
+        <View style={styles.shareCard}>
+          <View style={styles.shareLeft}>
+            <View style={styles.shareIconBg}>
+              <Ionicons name="shield-checkmark-outline" size={20} color="#63B32E" />
+            </View>
+            <View style={{flexShrink: 1}}>
+              <Text style={styles.shareTitle}>Share Your Streak</Text>
+              <Text style={styles.shareSubtitle}>Show off your composting consistency!</Text>
+            </View>
+          </View>
+          <View style={styles.shareButtons}>
+            <TouchableOpacity style={[styles.socialButton, { backgroundColor: '#1877F2' }]}>
+              <Ionicons name="logo-facebook" size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.socialButton, { backgroundColor: '#E1306C' }]}>
+              <Ionicons name="logo-instagram" size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+            <TouchableOpacity style={[styles.socialButton, { backgroundColor: '#25D366' }]}>
+              <Ionicons name="logo-whatsapp" size={16} color="#FFFFFF" />
+            </TouchableOpacity>
+          </View>
+        </View>
+
       </ScrollView>
-    </View>
+    </SafeAreaView>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FFFDF8', 
+  },
+  fullScreenBgImage: {
+    ...StyleSheet.absoluteFill,
+    width: '100%',
+    height: '100%',
+    opacity: 0.10, 
+    zIndex: -1,
+    resizeMode: 'cover'
+  },
+  scrollContent: {
+    padding: 24,
+    paddingBottom: 160, 
+  },
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginTop: 24,
+  },
+  greetingRow: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+  },
+  greeting: {
+    fontSize: 16,
+    color: '#6F6F6F',
+    fontWeight: '500',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  name: {
+    fontSize: 34,
+    fontWeight: 'bold',
+    color: '#222222',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    marginTop: 2,
+    marginBottom: 4,
+  },
+  subGreeting: {
+    fontSize: 14,
+    color: '#999999',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    fontWeight: '500',
+  },
+  headerRight: {
+    flexDirection: 'column',
+    alignItems: 'flex-end',
+    gap: 16,
+  },
+  simulatingBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#EDF8E8',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 24,
+  },
+  simulatingText: {
+    color: '#214F25',
+    fontWeight: '600',
+    fontSize: 13,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  settingsButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#ECF7E9',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginLeft: 14,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 10,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  playButton: {
+    backgroundColor: '#FFFFFF',
+    width: 48,
+    height: 48,
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 4 },
+    elevation: 3,
+  },
+  heroSection: {
+    alignItems: 'center',
+    marginTop: 48,
+    marginBottom: 32,
+  },
+  progressCircleContainer: {
+    width: 240,
+    height: 240,
+    position: 'relative',
+    marginBottom: 64, 
+  },
+  progressCircleOuterGlow: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 240,
+    height: 240,
+    borderRadius: 120,
+    backgroundColor: '#FFFDF8',
+    shadowColor: '#63B32E',
+    shadowOpacity: 0.1,
+    shadowRadius: 40,
+    shadowOffset: { width: 0, height: 10 },
+    elevation: 2,
+  },
+  svgRingContainer: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 240,
+    height: 240,
+    zIndex: 2,
+  },
+  progressCircleInner: {
+    position: 'absolute',
+    top: 18,
+    left: 18,
+    width: 204,
+    height: 204,
+    borderRadius: 102,
+    backgroundColor: '#FFFDF8',
+    zIndex: 3,
+    shadowColor: '#000',
+    shadowOpacity: 0.04,
+    shadowRadius: 12,
+    shadowOffset: { width: 0, height: 6 },
+    elevation: 1,
+  },
+  progressCircle: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    width: 240,
+    height: 240,
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 5,
+  },
+  compostingLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#63B32E',
+    letterSpacing: 1.5,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    marginTop: 12,
+  },
+  daysNumber: {
+    fontSize: 64,
+    fontWeight: 'bold',
+    color: '#222222',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    marginVertical: -8,
+  },
+  daysLabel: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#6F6F6F',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    marginBottom: 8,
+  },
+  phaseDivider: {
+    width: 24,
+    height: 2,
+    backgroundColor: '#E5E5E5',
+    borderRadius: 1,
+    marginBottom: 8,
+  },
+  phaseText: {
+    fontSize: 12,
+    color: '#6F6F6F',
+    fontWeight: '500',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  statusCard: {
+    backgroundColor: '#FFFFFF',
+    width: '100%',
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 32,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 24,
+    shadowOffset: { width: 0, height: 12 },
+    elevation: 4,
+    flexDirection: 'column',
+  },
+  statusCardIconBg: {
+    width: 48,
+    height: 48,
+    backgroundColor: '#EDF8E8',
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  statusCardHeaderLabel: {
+    fontSize: 12,
+    color: '#999999',
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    marginBottom: 4,
+  },
+  statusCardTextContainer: {
+    marginBottom: 24,
+  },
+  statusCardTitle: {
+    fontSize: 22,
+    fontWeight: '600',
+    color: '#222222',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  statusCardSubtext: {
+    fontSize: 15,
+    color: '#6F6F6F',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    lineHeight: 22,
+  },
+  compactStatusRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#F8F9FA', 
+    borderRadius: 16,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    marginBottom: 12,
+    justifyContent: 'center'
+  },
+  compactStatusItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  compactStatusDivider: {
+    width: 1,
+    height: 24,
+    backgroundColor: '#E5E5E5',
+    marginHorizontal: 16,
+  },
+  compactStatusLabel: {
+    fontSize: 13,
+    color: '#999999',
+    marginRight: 8,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  statusDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#63B32E',
+    marginRight: 6,
+  },
+  compactStatusValue: {
+    fontSize: 13,
+    color: '#222222',
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  sysSync: {
+    fontSize: 11,
+    color: '#999999',
+    textAlign: 'right',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    marginBottom: 32,
+  },
+  sectionTitleContainer: {
+    flexDirection: 'column',
+    alignItems: 'flex-start',
+    marginTop: 32,
+    marginBottom: 24,
+    position: 'relative',
+    width: '100%',
+  },
+  sectionTitle: {
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#222222',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  titleUnderline: {
+    height: 3,
+    backgroundColor: '#63B32E',
+    width: 48,
+    borderRadius: 1.5,
+    marginTop: 8,
+  },
+  impactContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+  },
+  impactCard: {
+    backgroundColor: '#FFFFFF',
+    width: '48%',
+    padding: 24,
+    borderRadius: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
+    flexDirection: 'column',
+  },
+  impactIconContainer: {
+    backgroundColor: '#EDF8E8',
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  impactCardTitle: {
+    fontSize: 13,
+    color: '#6F6F6F',
+    fontWeight: '600',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    marginBottom: 12,
+  },
+  impactValue: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#222222',
+    marginBottom: 12,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  impactSubtext: {
+    fontSize: 12,
+    color: '#999999',
+    lineHeight: 16,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  consistencyCard: {
+    backgroundColor: '#FFFFFF',
+    width: '100%',
+    borderRadius: 24,
+    padding: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
+  },
+  consistencySubtitle: {
+    fontSize: 14,
+    color: '#6F6F6F',
+    fontWeight: '500',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    marginBottom: 24,
+  },
+  chartWrapper: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  chartLabels: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginTop: 16,
+  },
+  chartLabelText: {
+    fontSize: 12,
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  trophyBadge: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#EDF8E8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  keepItUpBadge: {
+    backgroundColor: '#EDF8E8',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  keepItUpText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#63B32E',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  shareCard: {
+    backgroundColor: '#FFFFFF',
+    width: '100%',
+    borderRadius: 20,
+    padding: 20,
+    marginTop: 24,
+    shadowColor: '#000',
+    shadowOpacity: 0.05,
+    shadowRadius: 18,
+    shadowOffset: { width: 0, height: 8 },
+    elevation: 3,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  shareLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    marginRight: 12,
+  },
+  shareIconBg: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#EDF8E8',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  shareTitle: {
+    fontSize: 14,
+    fontWeight: '700',
+    color: '#222222',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+    marginBottom: 2,
+  },
+  shareSubtitle: {
+    fontSize: 11,
+    color: '#999999',
+    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  },
+  shareButtons: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  socialButton: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+  }
+});

@@ -24,7 +24,9 @@
     },
     "plugins": [
       "expo-splash-screen",
-      "expo-audio"
+      "expo-audio",
+      "expo-web-browser",
+      "expo-apple-authentication"
     ]
   }
 }

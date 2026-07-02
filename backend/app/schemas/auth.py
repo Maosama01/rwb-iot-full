@@ -109,6 +109,18 @@ class SocialLoginRequest(BaseModel):
     id_token: str = Field(..., description="Firebase ID Token from the client SDK")
 
 
+class GoogleLoginRequest(BaseModel):
+    """Body for POST /api/v1/auth/social/google"""
+    id_token: str = Field(..., description="Google OAuth ID Token from expo-auth-session")
+
+
+class AppleLoginRequest(BaseModel):
+    """Body for POST /api/v1/auth/social/apple"""
+    id_token: str = Field(..., description="Apple Identity Token")
+    first_name: Optional[str] = Field(None, description="First name provided on initial login")
+    last_name: Optional[str] = Field(None, description="Last name provided on initial login")
+
+
 # ── Response Models ───────────────────────────────────────────────────────────
 
 class UserResponse(BaseModel):

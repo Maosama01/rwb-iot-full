@@ -8,6 +8,7 @@ import apiClient from '../api/client';
 
 export function LibraryScreen() {
   const [activeTab, setActiveTab] = useState<'item' | 'category'>('item');
+  const [selectedFilter, setSelectedFilter] = useState<'All' | 'Browns' | 'Greens' | 'Avoid'>('All');
   const [searchQuery, setSearchQuery] = useState('');
   const [isSearching, setIsSearching] = useState(false);
   const [isProcessingVoice, setIsProcessingVoice] = useState(false);
@@ -172,164 +173,208 @@ export function LibraryScreen() {
     const isYes = result.verdict === 'yes';
     const isNo = result.verdict === 'no';
 
-    let bgColor = isYes ? 'bg-rawbin-accent' : isNo ? 'bg-[#FFE5E5]' : 'bg-[#FFF9E6]';
-    let iconColor = isYes ? '#45B900' : isNo ? '#C0392B' : '#B8860B';
-    let iconName = isYes ? 'checkmark-circle' : isNo ? 'close-circle' : 'warning';
+    const bgColor = isYes ? '#EAF3E2' : isNo ? '#FFE5E5' : '#FFF9E6';
+    const textColor = isYes ? '#45B900' : isNo ? '#C0392B' : '#B8860B';
+    const iconName = isYes ? 'checkmark-circle' : isNo ? 'close-circle' : 'warning';
     
     return (
-      <View style={{ borderRadius: 16, padding: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)', marginTop: 16, backgroundColor: isYes ? '#E8F0E0' : isNo ? '#FFE5E5' : '#FFF9E6' }}>
+      <View style={{ borderRadius: 24, padding: 20, borderWidth: 1, borderColor: '#F0F0F0', marginTop: 16, backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 4 }, shadowOpacity: 0.05, shadowRadius: 8, elevation: 2 }}>
         <View className="flex-row items-center mb-3">
-          <Ionicons name={iconName as any} size={28} color={iconColor} />
-          <Text className="text-rawbin-text font-nunito-black text-xl ml-2 uppercase tracking-wide flex-1">{result.title}</Text>
+          <Ionicons name={iconName as any} size={28} color={textColor} />
+          <Text className="text-[#1A330B] font-nunito-black text-xl ml-2 uppercase tracking-wide flex-1">{result.title}</Text>
         </View>
-        <Text className="text-rawbin-text font-nunito text-sm leading-relaxed mb-3">{result.reason}</Text>
-        <View style={{ backgroundColor: 'rgba(255,255,255,0.6)', padding: 12, borderRadius: 12, marginBottom: 12 }}>
-          <Text className="text-rawbin-text font-nunito-bold text-xs mb-1">💡 Pro Tip:</Text>
-          <Text className="text-rawbin-text font-nunito text-xs leading-relaxed">{result.tip}</Text>
+        <Text className="text-[#8c9a87] font-nunito-regular text-sm leading-relaxed mb-4">{result.reason}</Text>
+        
+        <View style={{ backgroundColor: bgColor, padding: 16, borderRadius: 16, marginBottom: 16 }}>
+          <Text className="text-[#1A330B] font-nunito-bold text-xs mb-1">💡 Pro Tip:</Text>
+          <Text className="text-[#1A330B] font-nunito-regular text-xs leading-relaxed opacity-80">{result.tip}</Text>
         </View>
+        
         <View className="flex-row items-center justify-between">
-          <View style={{ backgroundColor: 'rgba(255,255,255,0.8)', paddingHorizontal: 12, paddingVertical: 4, borderRadius: 999, borderWidth: 1, borderColor: 'rgba(0,0,0,0.05)' }}>
-            <Text className="text-rawbin-text font-nunito-bold text-[10px] uppercase tracking-widest">{result.badge}</Text>
+          <View style={{ backgroundColor: bgColor, paddingHorizontal: 12, paddingVertical: 6, borderRadius: 999 }}>
+            <Text className="font-nunito-bold text-[10px] uppercase tracking-widest" style={{ color: textColor }}>{result.badge}</Text>
           </View>
           {result.breakdown_time && (
-            <Text className="text-rawbin-subtext font-nunito-bold text-xs">⏱ {result.breakdown_time}</Text>
+            <Text className="text-[#8c9a87] font-nunito-bold text-xs">⏱ {result.breakdown_time}</Text>
           )}
         </View>
       </View>
     );
   };
 
+  const ItemCard = ({ icon, title, type }: { icon: string, title: string, type: 'YES' | 'NO' | 'DEPENDS' }) => {
+    const isYes = type === 'YES';
+    const isNo = type === 'NO';
+    const bgColor = isYes ? '#EAF3E2' : isNo ? '#FFE5E5' : '#FFF9E6';
+    const textColor = isYes ? '#45B900' : isNo ? '#C0392B' : '#B8860B';
+  
+    return (
+      <View style={{ backgroundColor: 'white', borderRadius: 20, padding: 16, borderWidth: 1, borderColor: '#F0F0F0', width: '48%', marginBottom: 16, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 1 }}>
+        <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: bgColor, alignItems: 'center', justifyContent: 'center', marginBottom: 12 }}>
+          <Text style={{ fontSize: 24 }}>{icon}</Text>
+        </View>
+        <Text className="text-[#1A330B] font-nunito-bold text-[14px] mb-3 leading-tight">{title}</Text>
+        <View style={{ backgroundColor: bgColor, alignSelf: 'flex-start', paddingHorizontal: 8, paddingVertical: 4, borderRadius: 6 }}>
+          <Text className="font-nunito-bold text-[10px]" style={{ color: textColor }}>{type}</Text>
+        </View>
+      </View>
+    );
+  };
+
+  const RecentItem = ({ icon, title, type }: any) => {
+    const isYes = type === 'YES';
+    const isNo = type === 'NO';
+    const bgColor = isYes ? '#EAF3E2' : isNo ? '#FFE5E5' : '#FFF9E6';
+    const textColor = isYes ? '#45B900' : isNo ? '#C0392B' : '#B8860B';
+  
+    return (
+      <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: 'white', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: '#F0F0F0', marginBottom: 12, shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.03, shadowRadius: 4, elevation: 1 }}>
+        <View style={{ width: 44, height: 44, borderRadius: 22, backgroundColor: bgColor, alignItems: 'center', justifyContent: 'center', marginRight: 16 }}>
+          <Text style={{ fontSize: 22 }}>{icon}</Text>
+        </View>
+        <Text className="text-[#1A330B] font-nunito-bold text-[15px] flex-1">{title}</Text>
+        <View style={{ backgroundColor: bgColor, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 8 }}>
+          <Text className="font-nunito-bold text-[11px]" style={{ color: textColor }}>{type}</Text>
+        </View>
+      </View>
+    );
+  };
+
   return (
-    <ImageBackground 
-      source={require('../../assets/dashboard_bg.png')} 
-      style={{ flex: 1 }}
-      imageStyle={{ opacity: 0.15, resizeMode: 'cover' }}
-    >
-      <View style={{ flex: 1, backgroundColor: 'rgba(245, 240, 232, 0.9)' }}>
-        <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
-          {/* Header */}
-          <View className="px-6 pt-6 pb-4">
-            <View className="flex-row items-center">
-              <Image source={require('../../assets/logo.png')} style={{ width: 32, height: 32, resizeMode: 'contain', marginRight: 8 }} />
-              <Text className="text-rawbin-text font-nunito-black text-3xl ml-2">Can It Compost?</Text>
-            </View>
-            <Text className="text-rawbin-subtext font-nunito-bold text-sm mt-1 ml-9">Check before you chuck</Text>
-          </View>
+    <View className="flex-1 bg-[#FDFDF9]">
+      <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
+        {/* Header */}
+        <View className="px-6 pt-6 pb-6">
+          <Text className="text-[#1A330B] font-nunito-black text-3xl mb-1">Can It Compost?</Text>
+          <Text className="text-[#8c9a87] font-nunito-regular text-sm">Search our library before you throw it away.</Text>
+        </View>
 
-          {/* Tab Switcher */}
-          <View className="px-6 mb-4 flex-row justify-center">
-            <View style={{ backgroundColor: 'rgba(229, 223, 206, 0.5)', borderRadius: 999, padding: 4, flexDirection: 'row' }}>
-              <TouchableOpacity 
-                onPress={() => setActiveTab('item')}
-                className="px-6 py-2 rounded-full"
-                style={activeTab === 'item' ? { backgroundColor: 'white', elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 } : {}}
-              >
-                <Text className="font-nunito-bold text-xs" style={{ color: activeTab === 'item' ? '#45B900' : '#8e8578' }}>By Item</Text>
-              </TouchableOpacity>
-              <TouchableOpacity 
-                onPress={() => setActiveTab('category')}
-                className="px-6 py-2 rounded-full"
-                style={activeTab === 'category' ? { backgroundColor: 'white', elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 } : {}}
-              >
-                <Text className="font-nunito-bold text-xs" style={{ color: activeTab === 'category' ? '#45B900' : '#8e8578' }}>By Category</Text>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false}>
-            
-            {activeTab === 'item' ? (
-              <>
-                {/* Search Bar */}
-                <View className="mb-2">
-                  <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#ffffff', borderRadius: 16, paddingHorizontal: 16, paddingVertical: 12, borderWidth: 1, borderColor: recording ? '#FF3B30' : 'rgba(0,0,0,0.06)', elevation: 1, shadowColor: '#000', shadowOffset: { width: 0, height: 1 }, shadowOpacity: 0.05, shadowRadius: 2 }}>
-                    <Ionicons name="search" size={20} color={recording ? "#FF3B30" : "#45B900"} />
-                    <TextInput 
-                      className="flex-1 ml-3 text-rawbin-text font-nunito-bold"
-                      placeholder={recording ? "Listening..." : "Type any food item (e.g. Haddi)..."}
-                      placeholderTextColor={recording ? "#FF3B30" : "#a69d92"}
-                      value={searchQuery}
-                      onChangeText={handleSearch}
-                      editable={!recording && !isProcessingVoice}
-                    />
-                    <TouchableOpacity
-                      onPress={recording ? stopRecording : startRecording}
-                      disabled={isProcessingVoice}
-                      className="p-1"
-                    >
-                      {isProcessingVoice ? (
-                        <ActivityIndicator size="small" color="#744107" />
-                      ) : (
-                        <Ionicons name="mic" size={24} color={recording ? "#FF3B30" : "#a69d92"} />
-                      )}
-                    </TouchableOpacity>
-                  </View>
+        {/* Search Bar */}
+        <View className="px-6 mb-6">
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#EAF3E2', borderRadius: 999, paddingHorizontal: 20, paddingVertical: 14 }}>
+            <Ionicons name="search" size={20} color="#5C8D42" />
+            <TextInput 
+              className="flex-1 ml-3 text-[#1A330B] font-nunito-bold text-[15px]"
+              placeholder={recording ? "Listening..." : "Type any food item (e.g. Apple)..."}
+              placeholderTextColor={recording ? "#FF3B30" : "#5C8D42"}
+              value={searchQuery}
+              onChangeText={handleSearch}
+              editable={!recording && !isProcessingVoice}
+            />
+            <TouchableOpacity
+              onPress={recording ? stopRecording : startRecording}
+              disabled={isProcessingVoice}
+            >
+              {isProcessingVoice ? (
+                <ActivityIndicator size="small" color="#5C8D42" />
+              ) : (
+                <View className="bg-white w-9 h-9 rounded-full items-center justify-center shadow-sm">
+                  <Ionicons name="mic" size={18} color={recording ? "#FF3B30" : "#5C8D42"} />
                 </View>
+              )}
+            </TouchableOpacity>
+          </View>
+        </View>
 
-                {/* Result Card */}
-                {result && renderResultCard()}
+        {/* Tab Switcher */}
+        <View className="px-6 mb-6">
+          <View style={{ backgroundColor: '#F0F0F0', borderRadius: 999, padding: 4, flexDirection: 'row' }}>
+            <TouchableOpacity 
+              onPress={() => setActiveTab('item')}
+              className="flex-1 py-3 rounded-full items-center"
+              style={activeTab === 'item' ? { backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 } : {}}
+            >
+              <Text className="font-nunito-bold text-[13px]" style={{ color: activeTab === 'item' ? '#1A330B' : '#A4A4A4' }}>By Item</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              onPress={() => setActiveTab('category')}
+              className="flex-1 py-3 rounded-full items-center"
+              style={activeTab === 'category' ? { backgroundColor: 'white', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 } : {}}
+            >
+              <Text className="font-nunito-bold text-[13px]" style={{ color: activeTab === 'category' ? '#1A330B' : '#A4A4A4' }}>By Category</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
 
-                {/* Popular Checks */}
-                {!result && (
-                  <View className="mt-8 mb-10">
-                    <Text className="text-rawbin-subtext font-nunito-bold text-xs uppercase tracking-widest text-center mb-4">── Popular Checks ──</Text>
-                    <View style={{ backgroundColor: 'rgba(253, 250, 245, 0.9)', borderRadius: 16, padding: 20, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', flexDirection: 'row', justifyContent: 'space-between', flexWrap: 'wrap' }}>
-                      <View className="w-[48%] mb-3 flex-row items-center"><Text>🟢</Text><Text className="text-rawbin-text font-nunito ml-2 text-xs">Sabzi ke chilke</Text></View>
-                      <View className="w-[48%] mb-3 flex-row items-center"><Text>🔴</Text><Text className="text-rawbin-text font-nunito ml-2 text-xs">Gosht (Meat)</Text></View>
-                      <View className="w-[48%] mb-3 flex-row items-center"><Text>🟢</Text><Text className="text-rawbin-text font-nunito ml-2 text-xs">Coffee grounds</Text></View>
-                      <View className="w-[48%] mb-3 flex-row items-center"><Text>🔴</Text><Text className="text-rawbin-text font-nunito ml-2 text-xs">Haddi (Bones)</Text></View>
-                      <View className="w-[48%] flex-row items-center"><Text>🟡</Text><Text className="text-rawbin-text font-nunito ml-2 text-xs">Atta / Maida</Text></View>
-                      <View className="w-[48%] flex-row items-center"><Text>🟡</Text><Text className="text-rawbin-text font-nunito ml-2 text-xs">Citrus peels</Text></View>
-                    </View>
-                  </View>
-                )}
-              </>
-            ) : (
-              /* By Category View */
-              <View className="mt-4 mb-10">
-                <View className="flex-row justify-between mb-4">
-                  <View className="w-[48%]">
-                    <View style={{ backgroundColor: 'rgba(232, 240, 224, 0.9)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 12 }}>
-                      <Text className="text-3xl mb-1">🥦</Text>
-                      <Text className="text-rawbin-text font-nunito-bold text-sm">Veggie Scraps</Text>
-                      <Text className="text-rawbin-subtext text-[10px] mt-1">Excellent Nitrogen</Text>
-                    </View>
-                    <View style={{ backgroundColor: 'rgba(232, 240, 224, 0.9)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 12 }}>
-                      <Text className="text-3xl mb-1">🍌</Text>
-                      <Text className="text-rawbin-text font-nunito-bold text-sm">Fruit Peels</Text>
-                      <Text className="text-rawbin-subtext text-[10px] mt-1">Sweet Energy</Text>
-                    </View>
-                    <View style={{ backgroundColor: 'rgba(255, 249, 230, 0.9)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' }}>
-                      <Text className="text-3xl mb-1">🍞</Text>
-                      <Text className="text-[#B8860B] font-nunito-bold text-sm">Bread / Grains</Text>
-                      <Text style={{ color: 'rgba(184, 134, 11, 0.7)', fontSize: 10, marginTop: 4 }}>In small amounts</Text>
-                    </View>
-                  </View>
+        {activeTab === 'item' ? (
+          <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+            {/* Result Card */}
+            {result && renderResultCard()}
 
-                  <View className="w-[48%]">
-                    <View style={{ backgroundColor: 'rgba(255, 229, 229, 0.9)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 12 }}>
-                      <Text className="text-3xl mb-1">🥩</Text>
-                      <Text className="text-rawbin-error font-nunito-bold text-sm">Meat & Bones</Text>
-                      <Text style={{ color: 'rgba(192, 57, 43, 0.7)', fontSize: 10, marginTop: 4 }}>Attracts pests</Text>
-                    </View>
-                    <View style={{ backgroundColor: 'rgba(255, 229, 229, 0.9)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)', marginBottom: 12 }}>
-                      <Text className="text-3xl mb-1">🧀</Text>
-                      <Text className="text-rawbin-error font-nunito-bold text-sm">Dairy / Milk</Text>
-                      <Text style={{ color: 'rgba(192, 57, 43, 0.7)', fontSize: 10, marginTop: 4 }}>Rots quickly</Text>
-                    </View>
-                    <View style={{ backgroundColor: 'rgba(232, 240, 224, 0.9)', borderRadius: 16, padding: 16, borderWidth: 1, borderColor: 'rgba(0,0,0,0.06)' }}>
-                      <Text className="text-3xl mb-1">📄</Text>
-                      <Text className="text-rawbin-text font-nunito-bold text-sm">Paper / Cardboard</Text>
-                      <Text className="text-rawbin-subtext text-[10px] mt-1">Great Carbon</Text>
-                    </View>
-                  </View>
-                </View>
+            {/* Popular Checks */}
+            {!result && (
+              <View className="mt-2 mb-10">
+                <Text className="text-[#8c9a87] font-nunito-bold text-xs uppercase tracking-widest mb-4">Recently Searched</Text>
+                <RecentItem icon="🍎" title="Apple Core" type="YES" />
+                <RecentItem icon="🍗" title="Chicken Bones" type="NO" />
+                <RecentItem icon="☕" title="Coffee Grounds" type="YES" />
+                <RecentItem icon="🍞" title="Bread Crust" type="DEPENDS" />
+                <RecentItem icon="🍌" title="Banana Peel" type="YES" />
+                <RecentItem icon="🧀" title="Cheese" type="NO" />
               </View>
             )}
-
           </ScrollView>
-        </SafeAreaView>
-      </View>
-    </ImageBackground>
+        ) : (
+          <View className="flex-1">
+            {/* Category Filters */}
+            <View>
+              <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, gap: 10, paddingBottom: 20 }}>
+                {['All', 'Browns', 'Greens', 'Avoid'].map(filter => (
+                  <TouchableOpacity 
+                    key={filter}
+                    onPress={() => setSelectedFilter(filter as any)}
+                    style={{ 
+                      backgroundColor: selectedFilter === filter ? '#5C8D42' : 'white',
+                      borderWidth: 1,
+                      borderColor: selectedFilter === filter ? '#5C8D42' : '#E5E5E5',
+                      paddingHorizontal: 20,
+                      paddingVertical: 10,
+                      borderRadius: 999,
+                      shadowColor: '#000',
+                      shadowOffset: { width: 0, height: 1 },
+                      shadowOpacity: 0.05,
+                      shadowRadius: 2,
+                      elevation: 1
+                    }}
+                  >
+                    <Text className="font-nunito-bold text-[13px]" style={{ color: selectedFilter === filter ? 'white' : '#8c9a87' }}>{filter}</Text>
+                  </TouchableOpacity>
+                ))}
+              </ScrollView>
+            </View>
+
+            {/* Items Grid */}
+            <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+              <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
+                {/* Greens */}
+                {(selectedFilter === 'All' || selectedFilter === 'Greens') && (
+                  <>
+                    <ItemCard icon="🥦" title="Veggie Scraps" type="YES" />
+                    <ItemCard icon="🍌" title="Fruit Peels" type="YES" />
+                    <ItemCard icon="☕" title="Coffee Grounds" type="YES" />
+                  </>
+                )}
+                {/* Browns */}
+                {(selectedFilter === 'All' || selectedFilter === 'Browns') && (
+                  <>
+                    <ItemCard icon="📄" title="Paper / Cardboard" type="YES" />
+                    <ItemCard icon="🍂" title="Dry Leaves" type="YES" />
+                    <ItemCard icon="🍞" title="Bread / Grains" type="DEPENDS" />
+                  </>
+                )}
+                {/* Avoid */}
+                {(selectedFilter === 'All' || selectedFilter === 'Avoid') && (
+                  <>
+                    <ItemCard icon="🥩" title="Meat & Bones" type="NO" />
+                    <ItemCard icon="🧀" title="Dairy / Milk" type="NO" />
+                    <ItemCard icon="🛢️" title="Oils & Grease" type="NO" />
+                  </>
+                )}
+              </View>
+            </ScrollView>
+          </View>
+        )}
+      </SafeAreaView>
+    </View>
   );
 }

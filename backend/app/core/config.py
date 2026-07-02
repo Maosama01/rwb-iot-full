@@ -7,7 +7,7 @@ Uses pydantic-settings v2 for typed, validated config with .env support.
 
 import json
 from functools import lru_cache
-from typing import List, Literal
+from typing import List, Literal, Optional
 
 from pydantic import model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
@@ -127,6 +127,10 @@ class Settings(BaseSettings):
 
     # ── Gemini API (AI Companion) ────────────────────────────────────────────
     GEMINI_API_KEY: str = ""
+
+    # ── External Auth (Social Login) ───────────────────────────────────────────
+    GOOGLE_CLIENT_ID: str = ""
+    APPLE_CLIENT_ID: Optional[str] = None
 
 
 @lru_cache

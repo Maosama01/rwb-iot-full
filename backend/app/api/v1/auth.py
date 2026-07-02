@@ -25,6 +25,8 @@ from app.core.security import hash_password, verify_password
 from app.db.models.refresh_token import RefreshToken
 from app.db.models.user import User
 from app.schemas.auth import (
+    AppleLoginRequest,
+    GoogleLoginRequest,
     OTPRequestIn,
     OTPVerifyIn,
     PushTokenUpdate,
@@ -288,4 +290,191 @@ async def social_login_firebase(
 
     tokens = await auth_service.issue_token_pair(db, user.id)
     logger.info("User logged in (social)", extra={"user_id": str(user.id)})
+    return tokens
+
+
+@router.post(
+    "/social/google",
+    response_model=TokenResponse,
+    summary="Authenticate or register via a Google OAuth ID token",
+)
+async def social_login_google(
+    body: GoogleLoginRequest, db: DbSession
+) -> TokenResponse:
+    """
+    Verify a Google-issued ID token directly (no Firebase required).
+    If the user doesn't exist, auto-provision a new account.
+    """
+    try:
+        from google.oauth2 import id_token as google_id_token
+        from google.auth.transport import requests as google_requests
+    except ImportError:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="google-auth library is not installed.",
+        )
+
+    google_client_id = settings.GOOGLE_CLIENT_ID
+    if not google_client_id:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="GOOGLE_CLIENT_ID is not configured on this server.",
+        )
+
+    try:
+        idinfo = google_id_token.verify_oauth2_token(
+            body.id_token,
+            google_requests.Request(),
+            google_client_id,
+        )
+    except ValueError as e:
+        logger.warning("Invalid Google ID token: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired Google ID token.",
+        )
+
+    email = idinfo.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google token does not contain an email address.",
+        )
+    email = email.strip().lower()
+
+    if not idinfo.get("email_verified", False):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Google email is not verified.",
+        )
+
+    # Look up user by email
+    result = await db.execute(select(User).where(User.email == email))
+    user: User | None = result.scalar_one_or_none()
+
+    if user is None:
+        # Auto-provision a new user from Google profile
+        name = idinfo.get("name") or email.split("@")[0]
+        picture = idinfo.get("picture")
+        user = User(
+            email=email,
+            phone=None,
+            password_hash=hash_password("!unusable_google_oauth_pwd!"),
+            display_name=name,
+        )
+        db.add(user)
+        await db.flush()
+        logger.info("Provisioned new user via Google Sign-In", extra={"user_id": str(user.id)})
+    elif not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account has been disabled.",
+        )
+
+    tokens = await auth_service.issue_token_pair(db, user.id)
+    logger.info("User logged in (google)", extra={"user_id": str(user.id)})
+    return tokens
+
+
+@router.post(
+    "/social/apple",
+    response_model=TokenResponse,
+    summary="Authenticate or register via an Apple Identity token",
+)
+async def social_login_apple(
+    body: AppleLoginRequest, db: DbSession
+) -> TokenResponse:
+    """
+    Verify an Apple-issued Identity token directly.
+    If the user doesn't exist, auto-provision a new account.
+    """
+    from jose import jwt, jwk
+    import httpx
+    
+    apple_client_id = settings.APPLE_CLIENT_ID
+    if not apple_client_id:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="APPLE_CLIENT_ID is not configured on this server.",
+        )
+        
+    try:
+        # Fetch Apple's public keys
+        async with httpx.AsyncClient() as client:
+            resp = await client.get("https://appleid.apple.com/auth/keys")
+            resp.raise_for_status()
+            keys_data = resp.json()
+            
+        # Get the key ID from the unverified token header
+        unverified_header = jwt.get_unverified_header(body.id_token)
+        kid = unverified_header.get("kid")
+        if not kid:
+            raise ValueError("Token missing kid header")
+            
+        # Find the matching key
+        matching_key = next((k for k in keys_data["keys"] if k["kid"] == kid), None)
+        if not matching_key:
+            raise ValueError("Apple public key not found for this kid")
+            
+        # Construct the key object
+        public_key = jwk.construct(matching_key)
+        
+        # Decode and verify the token
+        decoded_token = jwt.decode(
+            body.id_token,
+            public_key,
+            algorithms=["RS256"],
+            audience=apple_client_id,
+            issuer="https://appleid.apple.com"
+        )
+    except Exception as e:
+        logger.warning("Invalid Apple ID token: %s", str(e))
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired Apple ID token.",
+        )
+
+    email = decoded_token.get("email")
+    if not email:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Apple token does not contain an email address.",
+        )
+    email = email.strip().lower()
+
+    # Look up user by email
+    result = await db.execute(select(User).where(User.email == email))
+    user: User | None = result.scalar_one_or_none()
+
+    if user is None:
+        # Auto-provision a new user from Apple profile
+        # Apple only sends first_name and last_name on the very first login
+        name = ""
+        if body.first_name:
+            name += body.first_name
+        if body.last_name:
+            if name:
+                name += " "
+            name += body.last_name
+            
+        if not name:
+            name = email.split("@")[0]
+            
+        user = User(
+            email=email,
+            phone=None,
+            password_hash=hash_password("!unusable_apple_oauth_pwd!"),
+            display_name=name,
+        )
+        db.add(user)
+        await db.flush()
+        logger.info("Provisioned new user via Apple Sign-In", extra={"user_id": str(user.id)})
+    elif not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="This account has been disabled.",
+        )
+
+    tokens = await auth_service.issue_token_pair(db, user.id)
+    logger.info("User logged in (apple)", extra={"user_id": str(user.id)})
     return tokens

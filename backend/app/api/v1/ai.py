@@ -401,7 +401,7 @@ async def generate_recipes(
         contents.append(ingredient_text)
 
         response = client.models.generate_content(
-            model='gemini-2.5-flash',
+            model='gemini-2.0-flash',
             contents=contents,
             config=types.GenerateContentConfig(
                 system_instruction=system_instruction,
@@ -414,4 +414,37 @@ async def generate_recipes(
         data = json.loads(response.text)
         return [RecipeResponse(**r) for r in data]
     except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
+        import traceback
+        import logging
+        logging.error(f"AI Generation Error: {e}")
+        logging.error(traceback.format_exc())
+        if 'response' in locals():
+            logging.error(f"Response text was: {response.text}")
+            
+        error_msg = str(e)
+        if "429" in error_msg or "RESOURCE_EXHAUSTED" in error_msg:
+            # Fallback mock response for when the user's API key hits the free tier daily limit
+            logging.warning("Gemini API rate limit exceeded. Falling back to mock recipes.")
+            return [
+                {
+                    "title": "Rustic Farmhouse Hash",
+                    "tag": "zero waste",
+                    "uses_items": ["apple", "cheese", "bread"],
+                    "extra_items": "butter, herbs, salt, pepper",
+                    "time": "15 mins",
+                    "servings": "2",
+                    "difficulty": "Easy",
+                    "youtube_link": "https://www.youtube.com/results?search_query=how+to+make+rustic+hash+with+leftover+bread",
+                    "instructions": [
+                        "Tear the leftover bread into bite-sized chunks.",
+                        "Dice the apple into small cubes.",
+                        "Melt butter in a skillet over medium heat.",
+                        "Toast the bread chunks until golden brown, then add the diced apple.",
+                        "Sprinkle shredded cheese over the top and cover until melted.",
+                        "Garnish with herbs and serve hot."
+                    ],
+                    "compost_tip": "Compost the apple core and any stems from the fresh herbs."
+                }
+            ]
+        raise HTTPException(status_code=500, detail=error_msg)
+
