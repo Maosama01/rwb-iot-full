@@ -19,8 +19,11 @@ The app is built with **NativeWind** (Tailwind CSS for React Native) to achieve 
 ## ✨ Key Features
 
 - **Seamless Authentication**: Features both email/password login and a highly polished **SMS OTP (One-Time Password)** login flow.
-- **Smart Dashboard**: Instantly view the status of your composter, the active phase of the cycle, and the total weight of compost produced over the last 6 months (visualized in a custom line chart).
-- **Interactive Cycle Simulator**: A built-in "Simulate Cycle" tool in the dashboard lets you instantly preview how the composter UI transforms over a 30-day process (changing icons and health metrics dynamically).
+- **Smart Dashboard & Virtual Bin Avatar 🌱**: Instantly view the status of your composter, active phase, and total compost produced. The "Digital Twin" Tamagotchi-style avatar reacts in real-time to MQTT telemetry (temperature & humidity) to show you how healthy your compost is.
+- **AI Compost Checker 📸**: Snap a photo of any waste item in the *Can It Compost?* tab. Gemini AI will instantly analyze the image and tell you if it's compostable, recyclable, or trash!
+- **Neighborhood Exchange 🤝**: A community marketplace tab where users can list their finished "Black Gold" or raw food scraps to trade with local neighbors, complete with distance tracking.
+- **SaveMyFood Recipes 🍳**: Generate AI-powered zero-waste recipes to use up leftovers before they go bad.
+- **Interactive Cycle Simulator**: A built-in tool lets you preview how the composter UI transforms over a 30-day process.
 - **Location & Settings**: Easily configure your timezone, household settings, and profile details via a clean settings interface.
 
 ## 🚀 Quick Start
