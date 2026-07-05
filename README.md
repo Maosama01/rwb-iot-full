@@ -22,7 +22,8 @@ Welcome to **Rawbin**. This repository contains the complete software stack need
 The system runs entirely locally using **Docker Compose** for the backend, alongside an **Expo React Native** application for the frontend:
 
 - 🎨 **Mobile App (`mobile`)**: React Native (Expo) app with a premium "Rawbin-like" glassmorphic aesthetic, NativeWind (Tailwind CSS), SMS OTP login, and a dynamic hardware simulator.
-- ⚡ **API (`api`)**: FastAPI backend for device pairing, auth, and historical data.
+- 🤖 **AI Features**: Integrated with Gemini 2.5 Flash for visual waste inspection (`/check-item-vision`) and zero-waste recipe generation.
+- ⚡ **API (`api`)**: FastAPI backend for device pairing, auth, historical data, and AI processing endpoints.
 - 🗄️ **Database (`db`)**: PostgreSQL 16 + TimescaleDB for high-performance time-series sensor readings.
 - 🚀 **Cache & Broker (`redis`)**: Redis 7 for Celery message brokering and caching.
 - 📡 **MQTT Broker (`mosquitto`)**: Eclipse Mosquitto for handling real-time telemetry from the IoT composter.
@@ -109,10 +110,12 @@ docker compose exec api alembic upgrade head
 
 With the stack running, everything is immediately accessible!
 
-### 📱 The Mobile App
-- The **Mobile** folder contains an Expo React Native application.
-- To start it, run `npm install` then `npx expo start` inside the `mobile` directory.
-- The **Hardware Simulator** is built right into the app's dashboard. Once you log in (using the seamless SMS OTP system), you can activate the simulator to instantly visualize live metrics and 30-day composting cycles!
+### 📱 The Mobile App Features
+- **Hardware Simulator**: Built right into the app's dashboard. Once you log in (using the seamless SMS OTP system), you can activate the simulator to instantly visualize live metrics and 30-day composting cycles!
+- **Virtual Bin Avatar 🌱**: A "Digital Twin" Tamagotchi-style avatar on the dashboard that reacts in real-time to the MQTT telemetry (temperature & humidity) to show you how healthy your compost is.
+- **AI Compost Checker 📸**: Tap the camera icon in the *Can It Compost?* tab to snap a photo of any waste item. Gemini AI will instantly tell you if it's compostable, recyclable, or trash!
+- **Neighborhood Exchange 🤝**: A community marketplace tab where users can list their finished "Black Gold" or raw food scraps to trade with neighbors.
+- **SaveMyFood Recipes 🍳**: Generate zero-waste recipes to use up leftovers before they go bad.
 
 ### 📱 Opening on Your Phone (Local Network Testing)
 To view and interact with the premium Rawbin app on your mobile device:
