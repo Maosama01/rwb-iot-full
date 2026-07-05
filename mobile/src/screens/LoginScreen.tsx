@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image, StyleSheet, Pressable } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, Image, StyleSheet, Pressable, Alert } from 'react-native';
 import { Ionicons, Feather } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -371,7 +371,20 @@ export function LoginScreen() {
           setIsLoading(false);
           return;
         }
-        const formattedPhone = `+${callingCode}${phone.replace(/[^0-9]/g, '')}`;
+        
+        const digitsOnly = phone.replace(/[^0-9]/g, '');
+        if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+          setErrorMsg("Please enter a valid phone number.");
+          setIsLoading(false);
+          return;
+        }
+        if (callingCode === '91' && digitsOnly.length !== 10) {
+          setErrorMsg("Please enter a valid 10-digit Indian phone number.");
+          setIsLoading(false);
+          return;
+        }
+
+        const formattedPhone = `+${callingCode}${digitsOnly}`;
         const finalLocation = [city, state, country].filter(Boolean).join(', ');
         const response = await apiClient.post('/auth/register', {
           email, password, display_name: displayName, phone: formattedPhone, location: finalLocation || undefined,
@@ -402,7 +415,19 @@ export function LoginScreen() {
     setIsLoading(true);
     setErrorMsg('');
     try {
-      const formattedPhone = `+${callingCode}${phone.replace(/[^0-9]/g, '')}`;
+      const digitsOnly = phone.replace(/[^0-9]/g, '');
+      if (digitsOnly.length < 7 || digitsOnly.length > 15) {
+        setErrorMsg("Please enter a valid phone number.");
+        setIsLoading(false);
+        return;
+      }
+      if (callingCode === '91' && digitsOnly.length !== 10) {
+        setErrorMsg("Please enter a valid 10-digit Indian phone number.");
+        setIsLoading(false);
+        return;
+      }
+
+      const formattedPhone = `+${callingCode}${digitsOnly}`;
       await apiClient.post('/auth/otp/request', { phone: formattedPhone });
       setOtpSent(true);
     } catch (error: any) {
@@ -618,7 +643,7 @@ export function LoginScreen() {
                         secureTextEntry={!showPassword} showToggle onToggle={() => setShowPassword(!showPassword)} textContentType="password"
                       />
                     </View>
-                    <TouchableOpacity style={{ alignSelf: 'flex-end', marginTop: 12 }}>
+                    <TouchableOpacity style={{ alignSelf: 'flex-end', marginTop: 12 }} onPress={() => navigation.navigate('ForgotPassword')}>
                       <Text style={{ color: '#6E7A70', fontFamily: 'Nunito_600SemiBold', fontSize: 12 }}>Forgot Password?</Text>
                     </TouchableOpacity>
                   </>

@@ -26,6 +26,8 @@ from app.db.models.refresh_token import RefreshToken
 from app.db.models.user import User
 from app.schemas.auth import (
     AppleLoginRequest,
+    ForgotPasswordRequestIn,
+    ForgotPasswordResetIn,
     GoogleLoginRequest,
     OTPRequestIn,
     OTPVerifyIn,
@@ -175,6 +177,64 @@ async def verify_otp(body: OTPVerifyIn, db: DbSession, redis: RedisDep) -> Token
     tokens = await auth_service.issue_token_pair(db, user.id)
     logger.info("User logged in (otp)", extra={"user_id": str(user.id)})
     return tokens
+
+
+@router.post(
+    "/forgot-password/request",
+    status_code=status.HTTP_202_ACCEPTED,
+    summary="Request a password reset SMS code",
+)
+async def forgot_password_request(body: ForgotPasswordRequestIn, db: DbSession, redis: RedisDep) -> dict:
+    """Send an SMS code to reset a user's password."""
+    result = await db.execute(select(User).where(User.phone == body.phone))
+    user: User | None = result.scalar_one_or_none()
+
+    if user is None or not user.is_active:
+        return {"detail": "If the number is registered, a code has been sent."}
+
+    try:
+        code = await issue_code(redis, body.phone)
+    except OTPCooldownError:
+        return {"detail": "If the number is registered, a code has been sent."}
+    try:
+        await send_sms(body.phone, f"Your Rawbin password reset code is {code}. It expires in 5 minutes.")
+    except SMSDeliveryError:
+        logger.error("Failed to deliver reset OTP SMS", extra={"phone": body.phone})
+        raise HTTPException(
+            status_code=status.HTTP_502_BAD_GATEWAY,
+            detail="Could not send the SMS code. Please try again.",
+        )
+
+    return {"detail": "Code has been sent."}
+
+
+@router.post(
+    "/forgot-password/reset",
+    status_code=status.HTTP_200_OK,
+    summary="Reset password using SMS code",
+)
+async def forgot_password_reset(body: ForgotPasswordResetIn, db: DbSession, redis: RedisDep) -> dict:
+    """Verify the SMS code and update the user's password."""
+    if not await verify_code(redis, body.phone, body.code):
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired code.",
+        )
+
+    result = await db.execute(select(User).where(User.phone == body.phone))
+    user: User | None = result.scalar_one_or_none()
+    if user is None or not user.is_active:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid or expired code.",
+        )
+
+    user.password_hash = hash_password(body.new_password)
+    await db.flush()
+    logger.info("User reset password", extra={"user_id": str(user.id)})
+    
+    return {"detail": "Password has been successfully reset."}
+
 
 
 @router.post(

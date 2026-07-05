@@ -19,6 +19,8 @@ import { LibraryScreen } from './src/screens/LibraryScreen';
 import { RecipesScreen } from './src/screens/RecipesScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { SetupScreen } from './src/screens/SetupScreen';
+import { ForgotPasswordScreen } from './src/screens/ForgotPasswordScreen';
+import { EditProfileScreen } from './src/screens/EditProfileScreen';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -163,9 +165,11 @@ export default function App() {
           <StatusBar style="dark" />
           <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
             <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
             <Stack.Screen name="Setup" component={SetupScreen} />
             <Stack.Screen name="MainApp" component={MainTabs} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
+            <Stack.Screen name="EditProfile" component={EditProfileScreen} />
           </Stack.Navigator>
         </NavigationContainer>
       </SafeAreaProvider>

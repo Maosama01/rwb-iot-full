@@ -25,4 +25,42 @@ apiClient.interceptors.request.use(
   }
 );
 
+apiClient.interceptors.response.use(
+  (response) => response,
+  async (error) => {
+    const originalRequest = error.config;
+    
+    // If the error is 401 Unauthorized and we haven't retried yet
+    if (error.response?.status === 401 && !originalRequest._retry) {
+      originalRequest._retry = true;
+      
+      try {
+        const refreshToken = await AsyncStorage.getItem('refresh_token');
+        if (refreshToken) {
+          // Use a new axios instance or raw fetch to avoid interceptor loops
+          const res = await axios.post(`${BASE_URL}/auth/refresh`, { 
+            refresh_token: refreshToken 
+          });
+          
+          if (res.data.access_token) {
+            await AsyncStorage.setItem('access_token', res.data.access_token);
+            await AsyncStorage.setItem('refresh_token', res.data.refresh_token);
+            
+            // Retry the original request with new token
+            originalRequest.headers.Authorization = `Bearer ${res.data.access_token}`;
+            return axios(originalRequest);
+          }
+        }
+      } catch (refreshError) {
+        console.error('Failed to refresh token:', refreshError);
+        // Clear tokens if refresh fails so user is forced to log in again
+        await AsyncStorage.removeItem('access_token');
+        await AsyncStorage.removeItem('refresh_token');
+      }
+    }
+    
+    return Promise.reject(error);
+  }
+);
+
 export default apiClient;

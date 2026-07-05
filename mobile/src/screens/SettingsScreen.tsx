@@ -1,5 +1,5 @@
 import React from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Alert } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, Alert, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation } from '@react-navigation/native';
@@ -24,7 +24,6 @@ export function SettingsScreen() {
             try {
               await AsyncStorage.removeItem('access_token');
               await AsyncStorage.removeItem('refresh_token');
-              // Reset navigation stack and go to Login
               navigation.reset({
                 index: 0,
                 routes: [{ name: 'Login' }],
@@ -39,81 +38,99 @@ export function SettingsScreen() {
   };
 
   return (
-    <View className="flex-1 bg-rawbin-bg">
-      <SafeAreaView className="flex-1" edges={['top', 'left', 'right']}>
+    <View style={styles.container}>
+      <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
         {/* Header */}
-        <View className="flex-row items-center px-6 pt-6 pb-4 border-b border-black/5">
-          <TouchableOpacity onPress={() => navigation.goBack()} className="mr-4">
-            <Ionicons name="arrow-back" size={24} color="#251605" />
+        <View style={styles.header}>
+          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+            <Ionicons name="arrow-back" size={24} color="#2A312B" />
           </TouchableOpacity>
-          <Text className="text-rawbin-text font-nunito-black text-2xl">Settings</Text>
+          <Text style={styles.headerTitle}>Settings</Text>
         </View>
 
-        <ScrollView className="flex-1 px-6 pt-6">
+        <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
           
-          <View className="mb-8">
-            <Text className="text-rawbin-subtext font-nunito-bold text-xs uppercase tracking-widest mb-3">Account</Text>
-            <View className="bg-white rounded-[16px] shadow-sm border border-[rgba(0,0,0,0.06)] overflow-hidden">
-              <TouchableOpacity className="flex-row justify-between items-center p-4 border-b border-[rgba(0,0,0,0.06)]">
-                <View className="flex-row items-center">
-                  <View className="w-8 h-8 rounded-full bg-rawbin-accent items-center justify-center mr-3">
-                    <Ionicons name="person-outline" size={18} color="#744107" />
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>ACCOUNT</Text>
+            <View style={styles.card}>
+              <TouchableOpacity 
+                style={[styles.row, styles.borderBottom]}
+                onPress={() => navigation.navigate('EditProfile')}
+              >
+                <View style={styles.rowLeft}>
+                  <View style={styles.iconContainer}>
+                    <Ionicons name="person-outline" size={18} color="#45C400" />
                   </View>
-                  <Text className="text-rawbin-text font-nunito-bold text-base">Edit Profile</Text>
+                  <Text style={styles.rowText}>Edit Profile</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#e5a971" />
+                <Ionicons name="chevron-forward" size={20} color="#B0B0B0" />
               </TouchableOpacity>
               
-              <TouchableOpacity className="flex-row justify-between items-center p-4">
-                <View className="flex-row items-center">
-                  <View className="w-8 h-8 rounded-full bg-rawbin-accent items-center justify-center mr-3">
-                    <Ionicons name="notifications-outline" size={18} color="#744107" />
+              <TouchableOpacity 
+                style={styles.row}
+                onPress={() => Alert.alert('Coming Soon', 'Notification settings will be available soon.')}
+              >
+                <View style={styles.rowLeft}>
+                  <View style={styles.iconContainer}>
+                    <Ionicons name="notifications-outline" size={18} color="#45C400" />
                   </View>
-                  <Text className="text-rawbin-text font-nunito-bold text-base">Notifications</Text>
+                  <Text style={styles.rowText}>Notifications</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#e5a971" />
+                <Ionicons name="chevron-forward" size={20} color="#B0B0B0" />
               </TouchableOpacity>
             </View>
           </View>
 
-          <View className="mb-8">
-            <Text className="text-rawbin-subtext font-nunito-bold text-xs uppercase tracking-widest mb-3">Device</Text>
-            <View className="bg-white rounded-[16px] shadow-sm border border-[rgba(0,0,0,0.06)] overflow-hidden">
-              <TouchableOpacity className="flex-row justify-between items-center p-4">
-                <View className="flex-row items-center">
-                  <View className="w-8 h-8 rounded-full bg-rawbin-accent items-center justify-center mr-3">
-                    <Ionicons name="hardware-chip-outline" size={18} color="#744107" />
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>DEVICE</Text>
+            <View style={styles.card}>
+              <TouchableOpacity 
+                style={styles.row}
+                onPress={() => navigation.navigate('Setup')}
+              >
+                <View style={styles.rowLeft}>
+                  <View style={styles.iconContainer}>
+                    <Ionicons name="hardware-chip-outline" size={18} color="#45C400" />
                   </View>
-                  <Text className="text-rawbin-text font-nunito-bold text-base">RAWBIN Setup</Text>
+                  <Text style={styles.rowText}>RAWBIN Setup</Text>
                 </View>
-                <Ionicons name="chevron-forward" size={20} color="#e5a971" />
+                <Ionicons name="chevron-forward" size={20} color="#B0B0B0" />
               </TouchableOpacity>
             </View>
           </View>
 
-          <View className="mb-8">
-            <Text className="text-rawbin-subtext font-nunito-bold text-xs uppercase tracking-widest mb-3">Support</Text>
-            <View className="bg-white rounded-[16px] shadow-sm border border-[rgba(0,0,0,0.06)] overflow-hidden">
-              <TouchableOpacity className="flex-row justify-between items-center p-4 border-b border-[rgba(0,0,0,0.06)]">
-                <Text className="text-rawbin-text font-nunito-bold text-base ml-11">Help Center</Text>
-                <Ionicons name="chevron-forward" size={20} color="#e5a971" />
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>SUPPORT</Text>
+            <View style={styles.card}>
+              <TouchableOpacity 
+                style={[styles.row, styles.borderBottom]}
+                onPress={() => Alert.alert('Coming Soon', 'Help Center will be available soon.')}
+              >
+                <Text style={styles.rowTextNoIcon}>Help Center</Text>
+                <Ionicons name="chevron-forward" size={20} color="#B0B0B0" />
               </TouchableOpacity>
-              <TouchableOpacity className="flex-row justify-between items-center p-4 border-b border-[rgba(0,0,0,0.06)]">
-                <Text className="text-rawbin-text font-nunito-bold text-base ml-11">Terms of Service</Text>
-                <Ionicons name="chevron-forward" size={20} color="#e5a971" />
+              <TouchableOpacity 
+                style={[styles.row, styles.borderBottom]}
+                onPress={() => Alert.alert('Coming Soon', 'Terms of Service will be available soon.')}
+              >
+                <Text style={styles.rowTextNoIcon}>Terms of Service</Text>
+                <Ionicons name="chevron-forward" size={20} color="#B0B0B0" />
               </TouchableOpacity>
-              <TouchableOpacity className="flex-row justify-between items-center p-4">
-                <Text className="text-rawbin-text font-nunito-bold text-base ml-11">Privacy Policy</Text>
-                <Ionicons name="chevron-forward" size={20} color="#e5a971" />
+              <TouchableOpacity 
+                style={styles.row}
+                onPress={() => Alert.alert('Coming Soon', 'Privacy Policy will be available soon.')}
+              >
+                <Text style={styles.rowTextNoIcon}>Privacy Policy</Text>
+                <Ionicons name="chevron-forward" size={20} color="#B0B0B0" />
               </TouchableOpacity>
             </View>
           </View>
 
           <TouchableOpacity 
             onPress={handleLogout}
-            className="bg-white rounded-[16px] shadow-sm border border-[rgba(0,0,0,0.06)] p-4 items-center mb-10"
+            style={styles.logoutButton}
           >
-            <Text className="text-rawbin-error font-nunito-black text-base">Log Out</Text>
+            <Text style={styles.logoutText}>Log Out</Text>
           </TouchableOpacity>
           
         </ScrollView>
@@ -121,3 +138,113 @@ export function SettingsScreen() {
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    backgroundColor: '#FAF8F2',
+  },
+  safeArea: {
+    flex: 1,
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9ECEF',
+  },
+  backButton: {
+    marginRight: 16,
+  },
+  headerTitle: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 24,
+    color: '#2A312B',
+  },
+  scrollView: {
+    flex: 1,
+  },
+  scrollContent: {
+    padding: 24,
+    paddingBottom: 40,
+  },
+  section: {
+    marginBottom: 32,
+  },
+  sectionTitle: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 12,
+    color: '#6E7A70',
+    textTransform: 'uppercase',
+    letterSpacing: 1.2,
+    marginBottom: 12,
+  },
+  card: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+    overflow: 'hidden',
+  },
+  row: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+  },
+  borderBottom: {
+    borderBottomWidth: 1,
+    borderBottomColor: '#E9ECEF',
+  },
+  rowLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    backgroundColor: '#F0F9EA', // Light green background
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  rowText: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 16,
+    color: '#2A312B',
+  },
+  rowTextNoIcon: {
+    fontFamily: 'Nunito_600SemiBold',
+    fontSize: 16,
+    color: '#2A312B',
+    marginLeft: 16,
+  },
+  logoutButton: {
+    backgroundColor: '#FFFFFF',
+    borderRadius: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.03,
+    shadowRadius: 10,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#E9ECEF',
+    padding: 16,
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoutText: {
+    fontFamily: 'Nunito_700Bold',
+    fontSize: 16,
+    color: '#D32F2F',
+  }
+});

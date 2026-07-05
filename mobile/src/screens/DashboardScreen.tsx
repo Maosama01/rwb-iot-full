@@ -1,10 +1,11 @@
-import React, { useEffect, useState, useRef } from 'react';
-import { View, Text, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, StyleSheet, Platform, Animated as RNAnimated } from 'react-native';
+import React, { useEffect, useState, useRef, useCallback } from 'react';
+import { View, Text, ScrollView, Image, TouchableOpacity, Dimensions, ActivityIndicator, StyleSheet, Platform, Animated as RNAnimated, Alert, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import Svg, { Circle, G, Rect, Defs, LinearGradient, Stop } from 'react-native-svg';
-import { useNavigation } from '@react-navigation/native';
+import Svg, { Circle, G, Rect, Defs, LinearGradient, Stop, Path } from 'react-native-svg';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import apiClient from '../api/client';
+import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
 
 interface PredictiveData {
   current_phase: string;
@@ -70,71 +71,138 @@ const CountdownRing = ({ size, strokeWidth, activeColor, inactiveColor, totalDay
   );
 };
 
-// Custom SVG Consistency Chart (6 months)
-const CustomConsistencyChart = () => {
-  const chartHeight = 90; 
-  const barWidth = 12; 
+// Custom SVG Smooth Line Chart (6 months)
+const SmoothLineChart = ({ data }: { data: { label: string, value: number }[] }) => {
+  const chartHeight = 180; 
+  const availableWidth = screenWidth - 48 - 48 - 30; // padding outer, card inner, and y-axis labels
   
-  // Data modeling 6 months of consistency
-  const data = [
-    { label: 'Jan', value: 40 },
-    { label: 'Feb', value: 55 },
-    { label: 'Mar', value: 65 },
-    { label: 'Apr', value: 50 },
-    { label: 'May', value: 60 },
-    { label: 'Jun', value: 100 },
-  ];
+  // Guard against empty data
+  if (!data || data.length === 0) {
+    return <View style={{ height: chartHeight, width: '100%', justifyContent: 'center', alignItems: 'center' }}><Text>No data</Text></View>;
+  }
   
-  // Distribute spacing perfectly
-  const availableWidth = screenWidth - 48 - 48; // padding outer and card inner padding
-  const totalBarWidths = data.length * barWidth;
-  const spacing = (availableWidth - totalBarWidths) / (data.length - 1);
-  const maxVal = 100;
+  const rawMax = Math.max(...data.map(d => d.value));
+  const maxVal = Math.max(6, Math.ceil(rawMax * 1.2));
+  const yLabels = [maxVal, maxVal * 0.66, maxVal * 0.33, 0].map(v => Math.round(v));
+
+  const spacing = availableWidth / (data.length - 1);
+  
+  const points = data.map((item, index) => ({
+    x: index * spacing,
+    y: chartHeight - (item.value / maxVal) * chartHeight
+  }));
+  
+  const getPath = () => {
+    let d = `M ${points[0].x} ${points[0].y}`;
+    for (let i = 0; i < points.length - 1; i++) {
+      const p0 = i === 0 ? points[0] : points[i - 1];
+      const p1 = points[i];
+      const p2 = points[i + 1];
+      const p3 = i + 2 < points.length ? points[i + 2] : p2;
+      const k = 0.18;
+      const cp1x = p1.x + (p2.x - p0.x) * k;
+      const cp1y = p1.y + (p2.y - p0.y) * k;
+      const cp2x = p2.x - (p3.x - p1.x) * k;
+      const cp2y = p2.y - (p3.y - p1.y) * k;
+      d += ` C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+    }
+    return d;
+  };
+
+  const linePath = getPath();
+  const areaPath = `${linePath} L ${availableWidth} ${chartHeight} L 0 ${chartHeight} Z`;
+
+  const animatedOffset = useRef(new RNAnimated.Value(1000)).current; 
+
+  useEffect(() => {
+    RNAnimated.timing(animatedOffset, {
+      toValue: 0,
+      duration: 1500,
+      useNativeDriver: true,
+    }).start();
+  }, [animatedOffset]);
+  
+  const AnimatedPath = RNAnimated.createAnimatedComponent(Path);
 
   return (
-    <View style={styles.chartWrapper}>
-      <Svg width={availableWidth} height={chartHeight}>
-        <Defs>
-          <LinearGradient id="activeGrad" x1="0" y1="0" x2="0" y2="1">
-            <Stop offset="0" stopColor="#63B32E" stopOpacity="1" />
-            <Stop offset="1" stopColor="#63B32E" stopOpacity="0.8" />
-          </LinearGradient>
-        </Defs>
-        {data.map((item, index) => {
-          const barHeight = (item.value / maxVal) * chartHeight;
-          const x = index * (barWidth + spacing);
-          const y = chartHeight - barHeight;
-          const isActive = index === data.length - 1;
+    <View style={{ width: '100%', marginTop: 40 }}>
+      {/* Grid lines (behind) */}
+      <View style={{ position: 'absolute', top: 0, left: 0, width: '100%', height: chartHeight, justifyContent: 'space-between' }}>
+        {yLabels.map((val, i) => (
+          <View key={i} style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <Text style={{ width: 30, fontSize: 11, color: '#999999', fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' }}>{val} kg</Text>
+            <View style={{ flex: 1, height: 1, borderBottomWidth: 1, borderBottomColor: '#E9ECEF', borderStyle: 'dashed' }} />
+          </View>
+        ))}
+      </View>
 
+      {/* SVG Line and Area */}
+      <View style={{ marginLeft: 30, width: availableWidth, height: chartHeight, overflow: 'visible' }}>
+        <Svg width={availableWidth} height={chartHeight} style={{ overflow: 'visible' }}>
+          <Defs>
+            <LinearGradient id="areaGrad" x1="0" y1="0" x2="0" y2="1">
+              <Stop offset="0" stopColor="#63B32E" stopOpacity="0.15" />
+              <Stop offset="1" stopColor="#63B32E" stopOpacity="0" />
+            </LinearGradient>
+          </Defs>
+          
+          <Path d={areaPath} fill="url(#areaGrad)" />
+          
+          <AnimatedPath 
+            d={linePath} 
+            fill="none" 
+            stroke="#63B32E" 
+            strokeWidth={3} 
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            strokeDasharray={1000}
+            strokeDashoffset={animatedOffset}
+          />
+
+          {points.map((p, i) => (
+            <Circle key={i} cx={p.x} cy={p.y} r={5} fill="#63B32E" stroke="#FFFFFF" strokeWidth={2} />
+          ))}
+        </Svg>
+        
+        {/* Tooltip Pills */}
+        {points.map((p, i) => {
+          if (i === points.length - 1) return null; 
           return (
-            <G key={item.label}>
-              <Rect
-                x={x}
-                y={y}
-                width={barWidth}
-                height={barHeight}
-                rx={6}
-                ry={6}
-                fill={isActive ? 'url(#activeGrad)' : '#EDF8E8'}
-              />
-            </G>
+            <View key={i} style={{
+              position: 'absolute',
+              left: p.x - 22,
+              top: p.y - 36,
+              backgroundColor: '#FFFFFF',
+              paddingHorizontal: 8,
+              height: 24,
+              justifyContent: 'center',
+              alignItems: 'center',
+              borderRadius: 12,
+              shadowColor: '#000',
+              shadowOpacity: 0.1,
+              shadowRadius: 4,
+              shadowOffset: { width: 0, height: 2 },
+              elevation: 2,
+            }}>
+              <Text style={{ fontSize: 11, fontWeight: '600', color: '#6F6F6F' }}>{data[i].value} kg</Text>
+            </View>
           );
         })}
-      </Svg>
-      <View style={[styles.chartLabels, { width: availableWidth }]}>
+      </View>
+      
+      {/* X Axis Labels */}
+      <View style={{ flexDirection: 'row', marginLeft: 30, width: availableWidth, justifyContent: 'space-between', marginTop: 12 }}>
         {data.map((item, index) => (
-          <Text 
-            key={item.label} 
-            style={[
-              styles.chartLabelText, 
-              { 
-                color: index === data.length - 1 ? '#222222' : '#999999', 
-                fontWeight: index === data.length - 1 ? '700' : '400' 
-              }
-            ]}
-          >
-            {item.label}
-          </Text>
+          <View key={item.label} style={{ width: 40, alignItems: 'center', marginLeft: -20 }}>
+            <Text style={{
+              fontSize: 12,
+              color: index === data.length - 1 ? '#1C1C1E' : '#A1A1AA',
+              fontWeight: index === data.length - 1 ? '700' : '400',
+              fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto'
+            }}>
+              {item.label}
+            </Text>
+          </View>
         ))}
       </View>
     </View>
@@ -143,93 +211,142 @@ const CustomConsistencyChart = () => {
 
 export function DashboardScreen() {
   const navigation = useNavigation<any>();
-  const [userName, setUserName] = useState<string>('Guest');
+  
+  // Real API State
+  const [userName, setUserName] = useState<string>('User');
   const [isLoading, setIsLoading] = useState(true);
+  const [activeDeviceId, setActiveDeviceId] = useState<string | null>(null);
   
-  // Simulator State
-  const [isSimulating, setIsSimulating] = useState(false);
-  const [simulatedDays, setSimulatedDays] = useState(0);
+  // Derived state from APIs
+  const [predictivePhase, setPredictivePhase] = useState('Waiting');
+  const [elapsedDays, setElapsedDays] = useState(0);
+  const [daysRemaining, setDaysRemaining] = useState(30);
+  const [healthScore, setHealthScore] = useState(100);
   
-  // Real data state
-  const [predictive, setPredictive] = useState<PredictiveData | null>(null);
-  const [totalWasteKg, setTotalWasteKg] = useState<number>(0);
+  const [lifetimeWasteKg, setLifetimeWasteKg] = useState(0);
+  const [totalWasteKg, setTotalWasteKg] = useState(0);
+  const [co2Avoided, setCo2Avoided] = useState('0.0');
+  
+  const [chartData, setChartData] = useState<{label: string, value: number}[]>([
+    { label: 'May', value: 0 },
+    { label: 'Jun', value: 0 },
+    { label: 'Jul', value: 0 },
+    { label: 'Aug', value: 0 },
+    { label: 'Sep', value: 0 },
+    { label: 'Oct', value: 0 },
+  ]);
 
-  useEffect(() => {
-    const fetchDashboardData = async () => {
-      try {
+  useFocusEffect(
+    useCallback(() => {
+      async function fetchDashboardData() {
         setIsLoading(true);
-        const userRes = await apiClient.get('/users/me');
-        if (userRes.data?.display_name) {
-          setUserName(userRes.data.display_name);
+        try {
+          // 0. Fetch user profile
+          try {
+            const userRes = await apiClient.get('/users/me');
+            if (userRes.data.display_name) {
+              setUserName(userRes.data.display_name.split(' ')[0]);
+            }
+          } catch (e) {
+            console.log('Failed to fetch user profile', e);
+          }
+
+          // 1. Fetch accessible devices
+          const devicesRes = await apiClient.get('/devices/');
+          const devices = devicesRes.data;
+          if (!devices || devices.length === 0) {
+            setIsLoading(false);
+            return;
+          }
+          const deviceId = devices[0].id;
+          setActiveDeviceId(deviceId);
+
+        // 2. Fetch predictive insights
+        try {
+          const predRes = await apiClient.get(`/analytics/predictive/${deviceId}`);
+          setPredictivePhase(predRes.data.current_phase || 'Unknown');
+          setDaysRemaining(predRes.data.estimated_days_remaining || 0);
+          setHealthScore(predRes.data.health_score || 0);
+          
+          if (predRes.data.phase_started_at) {
+            const started = new Date(predRes.data.phase_started_at);
+            const now = new Date();
+            const daysDiff = (now.getTime() - started.getTime()) / (1000 * 3600 * 24);
+            setElapsedDays(Math.max(0, daysDiff));
+          }
+        } catch (e) {
+          console.log('Failed to fetch predictive data', e);
         }
 
-        const devicesRes = await apiClient.get('/devices/');
-        const devices = devicesRes.data;
-        
-        if (devices && devices.length > 0) {
-          const mainDeviceId = devices[0].id;
-          const [predictiveRes, wasteRes] = await Promise.all([
-            apiClient.get(`/analytics/predictive/${mainDeviceId}`),
-            apiClient.get(`/devices/${mainDeviceId}/waste-logs?limit=200`)
-          ]);
+        // 3. Fetch waste logs for this device
+        try {
+          const wasteRes = await apiClient.get(`/devices/${deviceId}/waste-logs`);
+          const logs = wasteRes.data.logs || [];
           
-          setPredictive(predictiveRes.data);
+          // Calculate total waste for this month and lifetime
+          const currentMonth = new Date().getMonth();
+          const currentYear = new Date().getFullYear();
+          let currentMonthWaste = 0;
+          let lifetimeWaste = 0;
           
-          const logs: WasteLog[] = wasteRes.data.items || [];
-          let totalWeight = 0;
-          logs.forEach(log => {
-            totalWeight += log.weight_kg;
+          // Aggregate by month for chart (last 6 months)
+          const monthlyTotals: Record<number, number> = {};
+          
+          logs.forEach((log: any) => {
+            const logDate = new Date(log.logged_at);
+            const m = logDate.getMonth();
+            const y = logDate.getFullYear();
+            
+            lifetimeWaste += log.weight_kg;
+            if (m === currentMonth && y === currentYear) {
+              currentMonthWaste += log.weight_kg;
+            }
+            if (y === currentYear || (y === currentYear - 1 && m > currentMonth)) {
+              monthlyTotals[m] = (monthlyTotals[m] || 0) + log.weight_kg;
+            }
           });
           
-          setTotalWasteKg(totalWeight);
+          setLifetimeWasteKg(lifetimeWaste);
+          setTotalWasteKg(currentMonthWaste);
+          setCo2Avoided((lifetimeWaste * 1.5).toFixed(1));
+          
+          // Format chart data for the last 6 months
+          const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+          const newChartData = [];
+          for (let i = 5; i >= 0; i--) {
+            const d = new Date();
+            d.setMonth(d.getMonth() - i);
+            newChartData.push({
+              label: monthNames[d.getMonth()],
+              value: Number((monthlyTotals[d.getMonth()] || 0).toFixed(1))
+            });
+          }
+          setChartData(newChartData);
+
+        } catch (e) {
+          console.log('Failed to fetch waste logs', e);
         }
+
       } catch (error) {
-        console.log('Failed to fetch dashboard data:', error);
+        console.error('Error fetching dashboard data:', error);
       } finally {
         setIsLoading(false);
       }
-    };
-    
-    fetchDashboardData();
-  }, []);
-
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval>;
-    if (isSimulating) {
-      interval = setInterval(() => {
-        setSimulatedDays(prev => {
-          if (prev >= 30) {
-            setIsSimulating(false);
-            return 30;
-          }
-          return prev + 1;
-        });
-      }, 500); 
     }
-    return () => clearInterval(interval);
-  }, [isSimulating]);
+    fetchDashboardData();
+  }, [])
+  );
 
-  // Derived values
-  const hasActiveCycle = isSimulating ? true : !!(predictive && (predictive as any).phase_started_at);
-  const realDaysRemaining = predictive?.estimated_days_remaining ?? 0;
-  
-  const elapsedDays = isSimulating 
-    ? simulatedDays 
-    : (hasActiveCycle ? Math.max(0, 30 - realDaysRemaining) : 0);
-    
-  const daysRemaining = Math.max(0, 30 - Math.floor(elapsedDays));
-  const co2Avoided = (totalWasteKg * 1.5).toFixed(1);
+  const hasActiveCycle = elapsedDays > 0;
 
-  const getPhaseInfo = (days: number) => {
-    if (days === 0 && !hasActiveCycle) return { pill: 'Ready', phaseText: 'Waiting for Food Waste', phaseIcon: 'leaf' };
-    if (days < 5) return { pill: 'Preparing', phaseText: 'Phase 1 of 4 • Heating', phaseIcon: 'thermometer' };
-    if (days < 15) return { pill: 'Composting', phaseText: 'Phase 2 of 4 • Active', phaseIcon: 'sync' };
-    if (days < 25) return { pill: 'Drying', phaseText: 'Phase 3 of 4 • Drying', phaseIcon: 'sunny' };
-    if (days < 30) return { pill: 'Cooling', phaseText: 'Phase 4 of 4 • Cooling', phaseIcon: 'snow' };
-    return { pill: 'Finished', phaseText: 'Ready to harvest', phaseIcon: 'checkmark-circle' };
+  const getPhaseInfo = (days: number, phaseName: string) => {
+    if (!hasActiveCycle) return { pill: 'Ready', phaseText: 'Waiting for Food Waste', phaseIcon: 'leaf', status: 'Ready', humidity: '48%', subtext: 'Your Rawbin is waiting for food waste.' };
+    if (phaseName === 'Thermophilic') return { pill: 'Heating', phaseText: 'Phase 2 of 4 • Heating', phaseIcon: 'thermometer', status: 'Active', humidity: '80%', subtext: 'Machine is actively heating and neutralizing pathogens.' };
+    if (phaseName === 'Maturation') return { pill: 'Cooling', phaseText: 'Phase 4 of 4 • Cooling', phaseIcon: 'snow', status: 'Active', humidity: '15%', subtext: 'Cooling down the finished compost for safe handling.' };
+    return { pill: 'Composting', phaseText: 'Phase 1 of 4 • Active', phaseIcon: 'sync', status: 'Active', humidity: '65%', subtext: 'Microbes are rapidly breaking down the organic matter.' };
   };
 
-  const phaseInfo = getPhaseInfo(elapsedDays);
+  const phaseInfo = getPhaseInfo(elapsedDays, predictivePhase);
   
   const hour = new Date().getHours();
   const greetingTime = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
@@ -262,27 +379,19 @@ export function DashboardScreen() {
                 <Text style={styles.simulatingText}>{phaseInfo.pill}</Text>
               </TouchableOpacity>
               
-              <TouchableOpacity style={styles.settingsButton}>
+              <TouchableOpacity style={styles.settingsButton} onPress={() => navigation.navigate('Settings')}>
                 <Ionicons name="settings-sharp" size={20} color="#214F25" />
               </TouchableOpacity>
             </View>
-            
-            <TouchableOpacity 
-              style={styles.playButton} 
-              onPress={() => {
-                setSimulatedDays(0);
-                setIsSimulating(true);
-              }}
-            >
-              <Ionicons name="play" size={20} color="#63B32E" style={{ marginLeft: 2 }} />
-            </TouchableOpacity>
           </View>
         </View>
 
         {/* --- Hero Progress Section --- */}
         <View style={styles.heroSection}>
           {isLoading ? (
-            <ActivityIndicator size="large" color="#63B32E" />
+            <View style={{ height: 280, justifyContent: 'center', alignItems: 'center' }}>
+              <ActivityIndicator size="large" color="#63B32E" />
+            </View>
           ) : (
             <View style={styles.progressCircleContainer}>
               {/* Outer soft ambient shadow for the ring */}
@@ -319,21 +428,19 @@ export function DashboardScreen() {
           <View style={styles.statusCard}>
             <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 16 }}>
               <View style={styles.statusCardIconBg}>
-                <Ionicons name="leaf-outline" size={24} color="#63B32E" />
+                <Ionicons name={phaseInfo.phaseIcon as any} size={24} color="#63B32E" />
               </View>
               <View style={{ marginLeft: 16 }}>
                 <Text style={styles.statusCardHeaderLabel}>MACHINE STATUS</Text>
                 <Text style={styles.statusCardTitle}>
-                  {!hasActiveCycle ? "Ready to Start" : "Cycle Active"}
+                  {phaseInfo.status === 'Ready' ? "Ready to Start" : phaseInfo.status === 'Finished' ? "Cycle Complete" : "Cycle Active"}
                 </Text>
               </View>
             </View>
             
             <View style={styles.statusCardTextContainer}>
               <Text style={styles.statusCardSubtext}>
-                {!hasActiveCycle 
-                  ? "Your Rawbin is waiting for food waste." 
-                  : "Machine is actively neutralizing pathogens."}
+                {phaseInfo.subtext}
               </Text>
             </View>
             
@@ -341,13 +448,13 @@ export function DashboardScreen() {
             <View style={styles.compactStatusRow}>
               <View style={styles.compactStatusItem}>
                 <Text style={styles.compactStatusLabel}>Status</Text>
-                <View style={styles.statusDot} />
-                <Text style={styles.compactStatusValue}>{!hasActiveCycle ? 'Ready' : 'Running'}</Text>
+                <View style={[styles.statusDot, phaseInfo.status === 'Ready' ? {backgroundColor: '#999999'} : {}]} />
+                <Text style={styles.compactStatusValue}>{phaseInfo.status === 'Ready' ? 'Idle' : phaseInfo.status === 'Finished' ? 'Done' : 'Running'}</Text>
               </View>
               <View style={styles.compactStatusDivider} />
               <View style={styles.compactStatusItem}>
                 <Text style={styles.compactStatusLabel}>Humidity</Text>
-                <Text style={styles.compactStatusValue}>{!hasActiveCycle ? '48%' : '30%'}</Text>
+                <Text style={styles.compactStatusValue}>{phaseInfo.humidity}</Text>
               </View>
             </View>
             <Text style={styles.sysSync}>Last Synced: Just now</Text>
@@ -366,7 +473,7 @@ export function DashboardScreen() {
               <Ionicons name="leaf-outline" size={28} color="#63B32E" />
             </View>
             <Text style={styles.impactCardTitle}>Waste Reduced</Text>
-            <Text style={styles.impactValue}>{totalWasteKg.toFixed(1)} <Text style={{fontSize: 16}}>kg</Text></Text>
+            <Text style={styles.impactValue}>{lifetimeWasteKg.toFixed(1)} <Text style={{fontSize: 16}}>kg</Text></Text>
             <Text style={styles.impactSubtext}>Total waste kept out of landfill</Text>
           </View>
           
@@ -381,47 +488,101 @@ export function DashboardScreen() {
         </View>
 
         {/* --- Consistency Section --- */}
-        <View style={[styles.sectionTitleContainer, { marginTop: 48 }]}>
-          <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginBottom: 8 }}>
-            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
-              <View style={styles.trophyBadge}>
-                <Ionicons name="trophy" size={16} color="#63B32E" />
-              </View>
-              <Text style={[styles.sectionTitle, { marginBottom: 0 }]}>Consistency</Text>
+        <View style={{ flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', width: '100%', marginTop: 48, marginBottom: 16 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+            <View style={{ width: 48, height: 48, borderRadius: 24, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center', marginRight: 16 }}>
+              <Ionicons name="trophy-outline" size={24} color="#63B32E" />
             </View>
-            
-            <View style={styles.keepItUpBadge}>
-              <Ionicons name="trophy-outline" size={12} color="#63B32E" style={{marginRight: 4}} />
-              <Text style={styles.keepItUpText}>Keep it up!</Text>
+            <View>
+              <Text style={{ fontSize: 22, fontWeight: '700', color: '#1C1C1E' }}>Consistency</Text>
+              <Text style={{ fontSize: 15, color: '#6C757D', marginTop: 2 }}>Your composting journey</Text>
             </View>
+          </View>
+          
+          <View style={{ flexDirection: 'row', alignItems: 'center', backgroundColor: '#E8F5E9', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 16 }}>
+            <Ionicons name="trophy-outline" size={14} color="#63B32E" style={{marginRight: 4}} />
+            <Text style={{ fontSize: 13, fontWeight: '600', color: '#63B32E' }}>Keep it up!</Text>
           </View>
         </View>
 
-        <View style={styles.consistencyCard}>
-          <Text style={styles.consistencySubtitle}>Last 6 Months</Text>
-          <CustomConsistencyChart />
+        <View style={{ backgroundColor: '#FFFFFF', borderRadius: 24, padding: 24, shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 28, elevation: 4 }}>
+          <Text style={{ fontSize: 18, fontWeight: '500', color: '#6C757D', marginBottom: 4 }}>Total Compost Made</Text>
+          <View style={{ flexDirection: 'row', alignItems: 'baseline' }}>
+            <Text style={{ fontSize: 56, fontWeight: '800', color: '#1C1C1E' }}>{lifetimeWasteKg.toFixed(1)}</Text>
+            <Text style={{ fontSize: 18, fontWeight: '600', color: '#1C1C1E', marginLeft: 4 }}>kg</Text>
+          </View>
+          <View style={{ flexDirection: 'row', alignItems: 'center', marginTop: 4 }}>
+            <Ionicons name="arrow-up" size={16} color="#63B32E" />
+            <Text style={{ fontSize: 16, fontWeight: '600', color: '#63B32E', marginLeft: 2 }}>{healthScore}</Text>
+            <Text style={{ fontSize: 16, color: '#6C757D', marginLeft: 6 }}>Device Health Score</Text>
+          </View>
+          
+          <SmoothLineChart data={chartData} />
         </View>
         
-        {/* --- Share Streak Section (New) --- */}
-        <View style={styles.shareCard}>
-          <View style={styles.shareLeft}>
-            <View style={styles.shareIconBg}>
-              <Ionicons name="shield-checkmark-outline" size={20} color="#63B32E" />
+        {/* Motivational Banner */}
+        <View style={{ 
+          backgroundColor: '#FFFFFF', 
+          borderRadius: 24, 
+          paddingHorizontal: 24, 
+          paddingVertical: 24, 
+          marginTop: 32, 
+          flexDirection: 'row', 
+          alignItems: 'center', 
+          justifyContent: 'space-between',
+          shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 28, elevation: 4
+        }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1 }}>
+            <View style={{ width: 56, height: 56, borderRadius: 28, backgroundColor: '#E8F5E9', justifyContent: 'center', alignItems: 'center', marginRight: 16 }}>
+              <Ionicons name="leaf-outline" size={24} color="#63B32E" />
             </View>
-            <View style={{flexShrink: 1}}>
-              <Text style={styles.shareTitle}>Share Your Streak</Text>
-              <Text style={styles.shareSubtitle}>Show off your composting consistency!</Text>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 20, fontWeight: '600', color: '#1C1C1E', marginBottom: 2 }}>Great Job!</Text>
+              <Text style={{ fontSize: 14, color: '#6C757D', flexShrink: 1 }}>You made <Text style={{fontWeight: '700', color: '#1C1C1E'}}>{totalWasteKg.toFixed(1)} kg</Text> of compost this month.</Text>
             </View>
           </View>
-          <View style={styles.shareButtons}>
-            <TouchableOpacity style={[styles.socialButton, { backgroundColor: '#1877F2' }]}>
-              <Ionicons name="logo-facebook" size={16} color="#FFFFFF" />
+          
+          <View style={{ flexDirection: 'column', alignItems: 'flex-end', marginLeft: 16 }}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <Ionicons name="trending-up" size={20} color="#63B32E" style={{ marginRight: 4 }} />
+              <Text style={{ fontSize: 18, fontWeight: '700', color: '#63B32E' }}>+12%</Text>
+            </View>
+            <Text style={{ fontSize: 13, color: '#8E8E93', marginTop: 2 }}>vs last month</Text>
+          </View>
+        </View>
+        {/* Share Streak Section */}
+        <View style={{ backgroundColor: '#FFFFFF', borderRadius: 24, paddingHorizontal: 16, paddingVertical: 20, marginTop: 32, flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', shadowColor: '#000', shadowOffset: { width: 0, height: 8 }, shadowOpacity: 0.08, shadowRadius: 28, elevation: 4 }}>
+          <View style={{ flexDirection: 'row', alignItems: 'center', flex: 1, paddingRight: 8 }}>
+            <View style={{ width: 46, height: 46, borderRadius: 23, backgroundColor: '#F0F8F1', justifyContent: 'center', alignItems: 'center', marginRight: 12 }}>
+              <Ionicons name="shield-checkmark-outline" size={22} color="#63B32E" />
+            </View>
+            <View style={{ flex: 1 }}>
+              <Text style={{ fontSize: 15, fontWeight: '700', color: '#1C1C1E', marginBottom: 2 }} numberOfLines={1}>Share Your Streak</Text>
+              <Text style={{ fontSize: 13, color: '#8E8E93', lineHeight: 18 }} numberOfLines={2}>Show off your composting consistency!</Text>
+            </View>
+          </View>
+          
+          <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
+            <TouchableOpacity 
+              activeOpacity={0.7} 
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#1877F2', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }}
+              onPress={() => Share.share({ message: `I've been composting for ${elapsedDays} days with Rawbin! Join me.` })}
+            >
+              <Ionicons name="logo-facebook" size={20} color="#FFFFFF" />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.socialButton, { backgroundColor: '#E1306C' }]}>
-              <Ionicons name="logo-instagram" size={16} color="#FFFFFF" />
+            <TouchableOpacity 
+              activeOpacity={0.7} 
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#E1306C', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }}
+              onPress={() => Share.share({ message: `I've been composting for ${elapsedDays} days with Rawbin! Join me.` })}
+            >
+              <Ionicons name="logo-instagram" size={20} color="#FFFFFF" />
             </TouchableOpacity>
-            <TouchableOpacity style={[styles.socialButton, { backgroundColor: '#25D366' }]}>
-              <Ionicons name="logo-whatsapp" size={16} color="#FFFFFF" />
+            <TouchableOpacity 
+              activeOpacity={0.7} 
+              style={{ width: 40, height: 40, borderRadius: 20, backgroundColor: '#25D366', justifyContent: 'center', alignItems: 'center', shadowColor: '#000', shadowOffset: { width: 0, height: 2 }, shadowOpacity: 0.1, shadowRadius: 4, elevation: 2 }}
+              onPress={() => Share.share({ message: `I've been composting for ${elapsedDays} days with Rawbin! Join me.` })}
+            >
+              <Ionicons name="logo-whatsapp" size={20} color="#FFFFFF" />
             </TouchableOpacity>
           </View>
         </View>
@@ -852,9 +1013,9 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   shareIconBg: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 30,
+    height: 30,
+    borderRadius: 10,
     backgroundColor: '#EDF8E8',
     justifyContent: 'center',
     alignItems: 'center',

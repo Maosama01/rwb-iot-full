@@ -121,6 +121,38 @@ class AppleLoginRequest(BaseModel):
     last_name: Optional[str] = Field(None, description="Last name provided on initial login")
 
 
+class ForgotPasswordRequestIn(BaseModel):
+    """Body for POST /api/v1/auth/forgot-password/request"""
+    
+    phone: str = Field(
+        ...,
+        pattern=_E164_PATTERN,
+        description="E.164 phone number registered on the account.",
+        examples=["+14155552671"],
+    )
+
+
+class ForgotPasswordResetIn(BaseModel):
+    """Body for POST /api/v1/auth/forgot-password/reset"""
+    
+    phone: str = Field(..., pattern=_E164_PATTERN, examples=["+14155552671"])
+    code: str = Field(
+        ...,
+        min_length=4,
+        max_length=10,
+        description="The numeric code delivered by SMS.",
+        examples=["123456"],
+    )
+    new_password: str = Field(
+        ...,
+        min_length=8,
+        max_length=128,
+        description="New plain-text password.",
+        examples=["Sup3rSecure!"],
+    )
+
+
+
 # ── Response Models ───────────────────────────────────────────────────────────
 
 class UserResponse(BaseModel):
