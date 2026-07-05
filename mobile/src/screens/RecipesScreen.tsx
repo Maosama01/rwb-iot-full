@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, Alert, Linking, Image } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, Alert, Linking, Image, Share } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
@@ -150,6 +150,19 @@ export function RecipesScreen() {
     setIngredients([]);
     setRecipes([]);
     setExpandedRecipe(null);
+  };
+
+  const handleShare = async (recipe: any) => {
+    try {
+      const message = `Check out this Zero-Waste recipe I made with Rawbin!\n\n🍳 *${recipe.title}*\n\n⏱ Time: ${recipe.time} | 🍽 Servings: ${recipe.servings}\n\n🛒 Ingredients:\n${recipe.uses_items.join(', ')}\n${recipe.extra_items ? `\nPlus: ${recipe.extra_items}` : ''}\n\n📖 Instructions:\n${recipe.instructions.map((i: string, idx: number) => `${idx + 1}. ${i}`).join('\n')}\n\n🍃 Compost tip: ${recipe.compost_tip}\n\nWatch tutorial: ${recipe.youtube_link}`;
+      
+      await Share.share({
+        message,
+        title: recipe.title
+      });
+    } catch (error: any) {
+      Alert.alert('Error', 'Could not share recipe');
+    }
   };
 
   return (
@@ -390,6 +403,16 @@ export function RecipesScreen() {
                               <Text className="text-[#2C1E16] font-nunito-regular text-xs leading-relaxed">{recipe.compost_tip}</Text>
                             </View>
                           </View>
+
+                          {/* Share Button */}
+                          <TouchableOpacity 
+                            onPress={() => handleShare(recipe)}
+                            className="mt-6 flex-row items-center justify-center bg-[#5C8D42] py-4 rounded-[16px]"
+                          >
+                            <Ionicons name="share-outline" size={18} color="white" />
+                            <Text className="text-white font-nunito-black text-sm ml-2">Share Recipe</Text>
+                          </TouchableOpacity>
+
 
                         </View>
                       )}

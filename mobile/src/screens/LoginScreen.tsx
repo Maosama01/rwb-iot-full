@@ -521,10 +521,11 @@ export function LoginScreen() {
             ) : (
               <View style={{ marginBottom: 24, position: 'relative' }}>
                 {signupStep === 2 && (
-                  <Animated.View entering={FadeIn}>
+                  <Animated.View entering={FadeIn} style={{ position: 'absolute', left: -16, top: 4, zIndex: 20 }}>
                     <TouchableOpacity 
                       onPress={() => setSignupStep(1)}
-                      style={{ position: 'absolute', left: -16, top: 4, zIndex: 10, padding: 8 }}
+                      style={{ padding: 12 }}
+                      hitSlop={{ top: 20, bottom: 20, left: 20, right: 20 }}
                     >
                       <Feather name="arrow-left" size={24} color="#1F1F1F" />
                     </TouchableOpacity>

@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync, setAudioModeAsync } from 'expo-audio';
 import * as FileSystem from 'expo-file-system';
+import * as ImagePicker from 'expo-image-picker';
 import apiClient from '../api/client';
 
 export function LibraryScreen() {
@@ -167,6 +168,47 @@ export function LibraryScreen() {
     }
   };
 
+  const takePhoto = async () => {
+    try {
+      if (Platform.OS !== 'web') {
+        const { status } = await ImagePicker.requestCameraPermissionsAsync();
+        if (status !== 'granted') {
+          Alert.alert('Permission Denied', 'Camera access is required to analyze waste.');
+          return;
+        }
+      }
+
+      const pickerResult = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: true,
+        quality: 0.5,
+        base64: true,
+      });
+
+      if (!pickerResult.canceled && pickerResult.assets && pickerResult.assets[0].base64) {
+        setIsSearching(true);
+        setSearchQuery('Analyzing image...');
+        try {
+          const response = await apiClient.post('/ai/check-item-vision', { 
+            image_base64: pickerResult.assets[0].base64,
+            mime_type: 'image/jpeg'
+          });
+          handleAIResponse(response.data);
+          setSearchQuery('');
+        } catch (err: any) {
+          console.error('Vision API Error:', err);
+          const backendError = err.response?.data?.detail || err.message || 'Failed to process image.';
+          setResult({ verdict: 'maybe', title: 'Error', reason: backendError, badge: 'Error' });
+          setSearchQuery('');
+        } finally {
+          setIsSearching(false);
+        }
+      }
+    } catch (err) {
+      console.error('Camera Error:', err);
+    }
+  };
+
   const renderResultCard = () => {
     if (!result) return null;
 
@@ -259,8 +301,17 @@ export function LibraryScreen() {
               placeholderTextColor={recording ? "#FF3B30" : "#5C8D42"}
               value={searchQuery}
               onChangeText={handleSearch}
-              editable={!recording && !isProcessingVoice}
+              editable={!recording && !isProcessingVoice && !isSearching}
             />
+            <TouchableOpacity
+              onPress={takePhoto}
+              disabled={isProcessingVoice || isSearching}
+              className="mr-2"
+            >
+              <View className="bg-white w-9 h-9 rounded-full items-center justify-center shadow-sm">
+                <Ionicons name="camera" size={18} color="#5C8D42" />
+              </View>
+            </TouchableOpacity>
             <TouchableOpacity
               onPress={recording ? stopRecording : startRecording}
               disabled={isProcessingVoice}
@@ -305,12 +356,12 @@ export function LibraryScreen() {
             {!result && (
               <View className="mt-2 mb-10">
                 <Text className="text-[#8c9a87] font-nunito-bold text-xs uppercase tracking-widest mb-4">Recently Searched</Text>
-                <RecentItem icon="🍎" title="Apple Core" type="YES" />
-                <RecentItem icon="🍗" title="Chicken Bones" type="NO" />
-                <RecentItem icon="☕" title="Coffee Grounds" type="YES" />
-                <RecentItem icon="🍞" title="Bread Crust" type="DEPENDS" />
-                <RecentItem icon="🍌" title="Banana Peel" type="YES" />
-                <RecentItem icon="🧀" title="Cheese" type="NO" />
+                <RecentItem icon="☕" title="Chai Patti" type="YES" />
+                <RecentItem icon="🌼" title="Genda Phool" type="YES" />
+                <RecentItem icon="🥭" title="Aam ki Gutli" type="NO" />
+                <RecentItem icon="🫓" title="Leftover Parathas" type="DEPENDS" />
+                <RecentItem icon="🍋" title="Nimbu ke Chilke" type="DEPENDS" />
+                <RecentItem icon="🥥" title="Nariyal ka Khopra" type="NO" />
               </View>
             )}
           </ScrollView>
@@ -319,7 +370,7 @@ export function LibraryScreen() {
             {/* Category Filters */}
             <View>
               <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, gap: 10, paddingBottom: 20 }}>
-                {['All', 'Browns', 'Greens', 'Avoid'].map(filter => (
+                {['All', 'Daily Waste', 'Puja Waste', 'Avoid'].map(filter => (
                   <TouchableOpacity 
                     key={filter}
                     onPress={() => setSelectedFilter(filter as any)}
@@ -346,28 +397,28 @@ export function LibraryScreen() {
             {/* Items Grid */}
             <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
               <View style={{ flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'space-between' }}>
-                {/* Greens */}
-                {(selectedFilter === 'All' || selectedFilter === 'Greens') && (
+                {/* Daily Waste */}
+                {(selectedFilter === 'All' || selectedFilter === 'Daily Waste') && (
                   <>
-                    <ItemCard icon="🥦" title="Veggie Scraps" type="YES" />
-                    <ItemCard icon="🍌" title="Fruit Peels" type="YES" />
-                    <ItemCard icon="☕" title="Coffee Grounds" type="YES" />
+                    <ItemCard icon="🫑" title="Lauki & Veg Peels" type="YES" />
+                    <ItemCard icon="☕" title="Chai Patti" type="YES" />
+                    <ItemCard icon="🌶️" title="Green Chilies" type="YES" />
                   </>
                 )}
-                {/* Browns */}
-                {(selectedFilter === 'All' || selectedFilter === 'Browns') && (
+                {/* Puja Waste */}
+                {(selectedFilter === 'All' || selectedFilter === 'Puja Waste') && (
                   <>
-                    <ItemCard icon="📄" title="Paper / Cardboard" type="YES" />
-                    <ItemCard icon="🍂" title="Dry Leaves" type="YES" />
-                    <ItemCard icon="🍞" title="Bread / Grains" type="DEPENDS" />
+                    <ItemCard icon="🌼" title="Genda Phool" type="YES" />
+                    <ItemCard icon="🍃" title="Mango Leaves" type="YES" />
+                    <ItemCard icon="🥥" title="Coconut Husks" type="NO" />
                   </>
                 )}
                 {/* Avoid */}
                 {(selectedFilter === 'All' || selectedFilter === 'Avoid') && (
                   <>
-                    <ItemCard icon="🥩" title="Meat & Bones" type="NO" />
-                    <ItemCard icon="🧀" title="Dairy / Milk" type="NO" />
-                    <ItemCard icon="🛢️" title="Oils & Grease" type="NO" />
+                    <ItemCard icon="🍲" title="Gravy (Rassa/Tari)" type="NO" />
+                    <ItemCard icon="🥭" title="Hard Fruit Stones" type="NO" />
+                    <ItemCard icon="🦴" title="Large Animal Bones" type="NO" />
                   </>
                 )}
               </View>

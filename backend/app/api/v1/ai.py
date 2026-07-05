@@ -274,6 +274,80 @@ async def check_item_voice(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+class CheckItemVisionRequest(BaseModel):
+    image_base64: str
+    mime_type: str = "image/jpeg"
+
+@router.post("/check-item-vision", response_model=CheckItemResponse)
+async def check_item_vision(
+    req: CheckItemVisionRequest,
+    current_user: CurrentUser,
+    db: DbSession,
+) -> CheckItemResponse:
+    """Check if an item in an image is compostable."""
+    system_instruction = (
+        "You are 'Rawbin AI', an expert eco-composting assistant. "
+        "Look at the provided image. Identify the primary food item or waste material. "
+        "Determine if it is compostable in a home composter. "
+        "Rules: "
+        "- Yes: fruit/veggie scraps, coffee grounds, eggshells, grains, dairy (cheese/milk). "
+        "- No: large bones, metal, plastic, glass, pet waste, synthetic materials. "
+        "Output ONLY a valid JSON object exactly matching this schema: "
+        "{"
+        "  \"compostable\": boolean,"
+        "  \"category\": \"greens\" | \"browns\" | \"no\","
+        "  \"title\": \"Identified Item Name (e.g. Banana Peels)\","
+        "  \"description\": \"1 sentence explaining why\","
+        "  \"tips\": [\"Tip 1\", \"Tip 2\"]"
+        "}"
+    )
+
+    api_key = settings.GEMINI_API_KEY
+    if not has_genai or not api_key:
+        raise HTTPException(status_code=500, detail="Gemini API is not configured.")
+
+    try:
+        client = genai.Client(api_key=api_key)
+        
+        response = client.models.generate_content(
+            model='gemini-2.5-flash',
+            contents=[
+                types.Part.from_bytes(
+                    data=base64.b64decode(req.image_base64),
+                    mime_type=req.mime_type,
+                ),
+                "What food or waste item is in this image? Is it compostable?"
+            ],
+            config=types.GenerateContentConfig(
+                system_instruction=system_instruction,
+                temperature=0.1,
+                response_mime_type="application/json",
+            ),
+        )
+        import json
+        data = json.loads(response.text)
+        
+        item_name_lower = data["title"].strip().lower()
+        
+        # Check if it already exists to prevent UniqueViolationError
+        existing = await db.execute(select(CompostItemCache).where(CompostItemCache.item_name == item_name_lower))
+        if not existing.scalars().first():
+            new_cache = CompostItemCache(
+                item_name=item_name_lower,
+                compostable=data["compostable"],
+                category=data["category"],
+                title=data["title"],
+                description=data["description"],
+                tips=data["tips"]
+            )
+            db.add(new_cache)
+            await db.commit()
+        
+        return CheckItemResponse(**data)
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+
 class ExtractIngredientsRequest(BaseModel):
     image_base64: str
 

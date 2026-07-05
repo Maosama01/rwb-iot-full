@@ -68,7 +68,7 @@ export function SettingsScreen() {
               
               <TouchableOpacity 
                 style={styles.row}
-                onPress={() => Alert.alert('Coming Soon', 'Notification settings will be available soon.')}
+                onPress={() => navigation.navigate('Alerts')}
               >
                 <View style={styles.rowLeft}>
                   <View style={styles.iconContainer}>
@@ -85,7 +85,7 @@ export function SettingsScreen() {
             <Text style={styles.sectionTitle}>DEVICE</Text>
             <View style={styles.card}>
               <TouchableOpacity 
-                style={styles.row}
+                style={[styles.row, styles.borderBottom]}
                 onPress={() => navigation.navigate('Setup')}
               >
                 <View style={styles.rowLeft}>
@@ -93,6 +93,32 @@ export function SettingsScreen() {
                     <Ionicons name="hardware-chip-outline" size={18} color="#45C400" />
                   </View>
                   <Text style={styles.rowText}>RAWBIN Setup</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#B0B0B0" />
+              </TouchableOpacity>
+              
+              <TouchableOpacity 
+                style={[styles.row, styles.borderBottom]}
+                onPress={() => navigation.navigate('FirmwareUpdate')}
+              >
+                <View style={styles.rowLeft}>
+                  <View style={styles.iconContainer}>
+                    <Ionicons name="sync-outline" size={18} color="#45C400" />
+                  </View>
+                  <Text style={styles.rowText}>Firmware Update</Text>
+                </View>
+                <Ionicons name="chevron-forward" size={20} color="#B0B0B0" />
+              </TouchableOpacity>
+
+              <TouchableOpacity 
+                style={styles.row}
+                onPress={() => navigation.navigate('CompostingGuide')}
+              >
+                <View style={styles.rowLeft}>
+                  <View style={styles.iconContainer}>
+                    <Ionicons name="leaf-outline" size={18} color="#45C400" />
+                  </View>
+                  <Text style={styles.rowText}>What goes in Rawbin?</Text>
                 </View>
                 <Ionicons name="chevron-forward" size={20} color="#B0B0B0" />
               </TouchableOpacity>

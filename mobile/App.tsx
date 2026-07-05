@@ -1,6 +1,7 @@
 import "./global.css";
-import React, { useCallback, useEffect } from 'react';
-import { View } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, TouchableOpacity, Platform, StyleSheet } from 'react-native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { StatusBar } from 'expo-status-bar';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { NavigationContainer } from '@react-navigation/native';
@@ -17,10 +18,17 @@ import { LoginScreen } from './src/screens/LoginScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
 import { LibraryScreen } from './src/screens/LibraryScreen';
 import { RecipesScreen } from './src/screens/RecipesScreen';
+import { MarketplaceScreen } from './src/screens/MarketplaceScreen';
 import { SettingsScreen } from './src/screens/SettingsScreen';
 import { SetupScreen } from './src/screens/SetupScreen';
 import { ForgotPasswordScreen } from './src/screens/ForgotPasswordScreen';
 import { EditProfileScreen } from './src/screens/EditProfileScreen';
+import { CompostingGuideScreen } from './src/screens/CompostingGuideScreen';
+import { DevicePairingScreen } from './src/screens/DevicePairingScreen';
+import { AlertsScreen } from './src/screens/AlertsScreen';
+import { GlobalNotificationBanner } from './src/components/GlobalNotificationBanner';
+import { OnboardingScreen } from './src/screens/OnboardingScreen';
+import { FirmwareUpdateScreen } from './src/screens/FirmwareUpdateScreen';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -30,7 +38,6 @@ const Stack = createNativeStackNavigator();
 
 import { BottomTabBarProps } from '@react-navigation/bottom-tabs';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { TouchableOpacity, Text, Platform } from 'react-native';
 
 function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   const insets = useSafeAreaInsets();
@@ -80,6 +87,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
         let iconName: any = '';
         if (route.name === 'Home') iconName = isFocused ? 'home' : 'home-outline';
         else if (route.name === 'Compost Check') iconName = isFocused ? 'leaf' : 'leaf-outline';
+        else if (route.name === 'Exchange') iconName = isFocused ? 'people' : 'people-outline';
         else if (route.name === 'Use It Up') iconName = isFocused ? 'restaurant' : 'restaurant-outline';
 
         return (
@@ -126,12 +134,16 @@ function MainTabs() {
     <Tab.Navigator tabBar={(props) => <CustomTabBar {...props} />} screenOptions={{ headerShown: false }}>
       <Tab.Screen name="Home" component={DashboardScreen} options={{ tabBarLabel: 'Home' }} />
       <Tab.Screen name="Compost Check" component={LibraryScreen} options={{ tabBarLabel: 'Can It Compost?' }} />
+      <Tab.Screen name="Exchange" component={MarketplaceScreen} options={{ tabBarLabel: 'Exchange' }} />
       <Tab.Screen name="Use It Up" component={RecipesScreen} options={{ tabBarLabel: 'SaveMyFood' }} />
     </Tab.Navigator>
   );
 }
 
 export default function App() {
+  const [isCheckingOnboarding, setIsCheckingOnboarding] = useState(true);
+  const [initialRoute, setInitialRoute] = useState<'Login' | 'Onboarding'>('Login');
+
   const [fontsLoaded] = useFonts({
     Nunito_400Regular,
     Nunito_700Bold,
@@ -148,13 +160,27 @@ export default function App() {
     'Inter-Black': Inter_900Black,
   });
 
+  useEffect(() => {
+    async function checkOnboarding() {
+      try {
+        // Force onboarding to show for presentations
+        setInitialRoute('Onboarding');
+      } catch (e) {
+        setInitialRoute('Onboarding');
+      } finally {
+        setIsCheckingOnboarding(false);
+      }
+    }
+    checkOnboarding();
+  }, []);
+
   const onLayoutRootView = useCallback(async () => {
-    if (fontsLoaded) {
+    if (fontsLoaded && !isCheckingOnboarding) {
       await SplashScreen.hideAsync();
     }
-  }, [fontsLoaded]);
+  }, [fontsLoaded, isCheckingOnboarding]);
 
-  if (!fontsLoaded) {
+  if (!fontsLoaded || isCheckingOnboarding) {
     return null;
   }
 
@@ -163,14 +189,20 @@ export default function App() {
       <SafeAreaProvider>
         <NavigationContainer>
           <StatusBar style="dark" />
-          <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName="Login">
+          <Stack.Navigator screenOptions={{ headerShown: false }} initialRouteName={initialRoute}>
+            <Stack.Screen name="Onboarding" component={OnboardingScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
             <Stack.Screen name="ForgotPassword" component={ForgotPasswordScreen} />
             <Stack.Screen name="Setup" component={SetupScreen} />
             <Stack.Screen name="MainApp" component={MainTabs} />
             <Stack.Screen name="Settings" component={SettingsScreen} />
             <Stack.Screen name="EditProfile" component={EditProfileScreen} />
+            <Stack.Screen name="CompostingGuide" component={CompostingGuideScreen} />
+            <Stack.Screen name="DevicePairing" component={DevicePairingScreen} />
+            <Stack.Screen name="Alerts" component={AlertsScreen} />
+            <Stack.Screen name="FirmwareUpdate" component={FirmwareUpdateScreen} />
           </Stack.Navigator>
+          <GlobalNotificationBanner />
         </NavigationContainer>
       </SafeAreaProvider>
     </View>

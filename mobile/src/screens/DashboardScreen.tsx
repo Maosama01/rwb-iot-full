@@ -5,6 +5,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Circle, G, Rect, Defs, LinearGradient, Stop, Path } from 'react-native-svg';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import apiClient from '../api/client';
+import { getMqttClient } from '../api/mqttClient';
 import { LinearGradient as ExpoLinearGradient } from 'expo-linear-gradient';
 
 interface PredictiveData {
@@ -236,6 +237,45 @@ export function DashboardScreen() {
     { label: 'Oct', value: 0 },
   ]);
 
+  // Live Telemetry State
+  const [liveTemp, setLiveTemp] = useState<string>('--');
+  const [liveHumidity, setLiveHumidity] = useState<string>('--');
+  const [lastSyncAge, setLastSyncAge] = useState<number | null>(null);
+
+  // MQTT Real-time Telemetry Subscription
+  useEffect(() => {
+    if (!activeDeviceId) return;
+
+    const mqttClient = getMqttClient();
+    const topic = `telemetry/${activeDeviceId}`;
+
+    mqttClient.subscribe(topic, (err) => {
+      if (!err) {
+        console.log(`📡 Subscribed to live telemetry: ${topic}`);
+      }
+    });
+
+    const handleMessage = (topicName: string, message: any) => {
+      if (topicName === topic) {
+        try {
+          const data = JSON.parse(message.toString());
+          setLiveTemp(`${data.temperature_c.toFixed(1)}°C`);
+          setLiveHumidity(`${data.humidity_pct.toFixed(0)}%`);
+          setLastSyncAge(0); // Just synced!
+        } catch (e) {
+          console.log('Error parsing live telemetry:', e);
+        }
+      }
+    };
+
+    mqttClient.on('message', handleMessage);
+
+    return () => {
+      mqttClient.unsubscribe(topic);
+      mqttClient.off('message', handleMessage);
+    };
+  }, [activeDeviceId]);
+
   useFocusEffect(
     useCallback(() => {
       async function fetchDashboardData() {
@@ -278,7 +318,23 @@ export function DashboardScreen() {
           console.log('Failed to fetch predictive data', e);
         }
 
-        // 3. Fetch waste logs for this device
+        // 3. Fetch live device status
+        try {
+          const statusRes = await apiClient.get(`/status/${deviceId}`);
+          if (statusRes.data.latest_reading) {
+            setLiveTemp(`${statusRes.data.latest_reading.temperature_c.toFixed(1)}°C`);
+            setLiveHumidity(`${statusRes.data.latest_reading.humidity_pct.toFixed(0)}%`);
+            setLastSyncAge(statusRes.data.reading_age_seconds);
+          } else {
+            setLiveTemp('--°C');
+            setLiveHumidity('--%');
+            setLastSyncAge(null);
+          }
+        } catch (e) {
+          console.log('Failed to fetch live status', e);
+        }
+
+        // 4. Fetch waste logs for this device
         try {
           const wasteRes = await apiClient.get(`/devices/${deviceId}/waste-logs`);
           const logs = wasteRes.data.logs || [];
@@ -339,6 +395,13 @@ export function DashboardScreen() {
 
   const hasActiveCycle = elapsedDays > 0;
 
+  const formatSyncTime = (seconds: number | null) => {
+    if (seconds === null) return 'Never';
+    if (seconds < 60) return 'Just now';
+    if (seconds < 3600) return `${Math.floor(seconds / 60)}m ago`;
+    return `${Math.floor(seconds / 3600)}h ago`;
+  };
+
   const getPhaseInfo = (days: number, phaseName: string) => {
     if (!hasActiveCycle) return { pill: 'Ready', phaseText: 'Waiting for Food Waste', phaseIcon: 'leaf', status: 'Ready', humidity: '48%', subtext: 'Your Rawbin is waiting for food waste.' };
     if (phaseName === 'Thermophilic') return { pill: 'Heating', phaseText: 'Phase 2 of 4 • Heating', phaseIcon: 'thermometer', status: 'Active', humidity: '80%', subtext: 'Machine is actively heating and neutralizing pathogens.' };
@@ -348,6 +411,19 @@ export function DashboardScreen() {
 
   const phaseInfo = getPhaseInfo(elapsedDays, predictivePhase);
   
+  const getAvatarMood = () => {
+    const tempVal = parseInt(liveTemp.replace(/\D/g, '')) || 25;
+    const humVal = parseInt(liveHumidity.replace(/\D/g, '')) || 55;
+
+    if (tempVal > 40) return { emoji: '🥵', mood: 'Sweating', tip: 'Too hot! Turn the pile to aerate.', color: '#FF9500' };
+    if (tempVal < 20) return { emoji: '🥶', mood: 'Shivering', tip: 'A bit cold! Add nitrogen-rich greens.', color: '#34A853' }; // blueish/greenish
+    if (humVal < 40) return { emoji: '🥀', mood: 'Wilting', tip: 'Too dry! Add some water or wet greens.', color: '#8B4513' };
+    if (humVal > 60) return { emoji: '💧', mood: 'Soggy', tip: 'Too wet! Add dry browns like paper.', color: '#007AFF' };
+    
+    return { emoji: '🌱', mood: 'Thriving', tip: 'Conditions are perfect! Great job.', color: '#63B32E' };
+  };
+
+  const avatar = getAvatarMood();
   const hour = new Date().getHours();
   const greetingTime = hour < 12 ? 'Good Morning' : hour < 18 ? 'Good Afternoon' : 'Good Evening';
 
@@ -423,6 +499,25 @@ export function DashboardScreen() {
               </View>
             </View>
           )}
+          {/* Virtual Bin Avatar Card */}
+          <View style={[styles.statusCard, { marginBottom: 20, borderColor: avatar.color + '40', borderWidth: 1, backgroundColor: '#FFFFFF' }]}>
+            <View style={{ flexDirection: 'row', alignItems: 'center' }}>
+              <View style={{ width: 64, height: 64, backgroundColor: avatar.color + '15', borderRadius: 32, justifyContent: 'center', alignItems: 'center', marginRight: 16 }}>
+                <Text style={{ fontSize: 36 }}>{avatar.emoji}</Text>
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={{ fontSize: 11, fontWeight: '800', color: avatar.color, letterSpacing: 1.2, textTransform: 'uppercase', marginBottom: 4, fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' }}>
+                  Virtual Bin
+                </Text>
+                <Text style={{ fontSize: 20, fontWeight: 'bold', color: '#2C1E16', marginBottom: 4, fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' }}>
+                  {avatar.mood}
+                </Text>
+                <Text style={{ fontSize: 13, color: '#7A6A5A', lineHeight: 18, fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto' }}>
+                  {avatar.tip}
+                </Text>
+              </View>
+            </View>
+          </View>
 
           {/* Machine Status Card */}
           <View style={styles.statusCard}>
@@ -451,13 +546,17 @@ export function DashboardScreen() {
                 <View style={[styles.statusDot, phaseInfo.status === 'Ready' ? {backgroundColor: '#999999'} : {}]} />
                 <Text style={styles.compactStatusValue}>{phaseInfo.status === 'Ready' ? 'Idle' : phaseInfo.status === 'Finished' ? 'Done' : 'Running'}</Text>
               </View>
+              <View style={styles.compactStatusItem}>
+                <Text style={styles.compactStatusLabel}>Temp</Text>
+                <Text style={styles.compactStatusValue}>{liveTemp}</Text>
+              </View>
               <View style={styles.compactStatusDivider} />
               <View style={styles.compactStatusItem}>
                 <Text style={styles.compactStatusLabel}>Humidity</Text>
-                <Text style={styles.compactStatusValue}>{phaseInfo.humidity}</Text>
+                <Text style={styles.compactStatusValue}>{liveHumidity}</Text>
               </View>
             </View>
-            <Text style={styles.sysSync}>Last Synced: Just now</Text>
+            <Text style={styles.sysSync}>Last Synced: {formatSyncTime(lastSyncAge)}</Text>
           </View>
         </View>
 
@@ -586,7 +685,8 @@ export function DashboardScreen() {
             </TouchableOpacity>
           </View>
         </View>
-
+        
+        <Text style={{ textAlign: 'center', color: '#B0B0B0', fontSize: 13, marginTop: 48, marginBottom: 24 }}>Rawbin App v1.0.0</Text>
       </ScrollView>
     </SafeAreaView>
   );
