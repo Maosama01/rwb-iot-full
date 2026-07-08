@@ -1,166 +1,344 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, FlatList, Alert } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, FlatList, Modal, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { Ionicons } from '@expo/vector-icons';
-import { useNavigation } from '@react-navigation/native';
+import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
 
-interface Listing {
+interface Offer {
   id: string;
-  user: {
-    name: string;
-    avatarInitials: string;
-    color: string;
-  };
+  nurseryName: string;
+  plantOffered: string;
+  compostRequired: string;
   distance: string;
-  type: 'offer_compost' | 'offer_scraps' | 'seek_scraps';
-  title: string;
-  description: string;
-  timeAgo: string;
+  timeEst: string;
+  availableSlots: string[];
+  imageColor: string;
+  coordinate?: {
+    latitude: number;
+    longitude: number;
+  };
+  
+  // New Fields
+  actionType: 'drop_off' | 'pick_up';
+  vendorType: 'nursery' | 'cart_puller';
+  rewardType: 'plant' | 'seeds' | 'discount';
+  currentLocationText?: string;
 }
 
-const mockListings: Listing[] = [
+const mockOffers: Offer[] = [
   {
     id: '1',
-    user: { name: 'Sarah J.', avatarInitials: 'SJ', color: '#8B4513' },
-    distance: '0.3 km away',
-    type: 'offer_compost',
-    title: '5kg of rich Black Gold!',
-    description: 'My Rawbin just finished a cycle and I have more compost than my indoor plants need. Come grab it!',
-    timeAgo: '2h ago'
+    nurseryName: 'Lalbagh Botanicals',
+    plantOffered: 'Rose Plant 🌹',
+    compostRequired: '3kg',
+    distance: '1.2 km away',
+    timeEst: '5 mins drive',
+    availableSlots: ['Today 4PM-6PM', 'Tomorrow 10AM-12PM'],
+    imageColor: '#D2691E',
+    coordinate: { latitude: 12.9150, longitude: 77.6400 },
+    actionType: 'drop_off',
+    vendorType: 'nursery',
+    rewardType: 'plant',
   },
   {
     id: '2',
-    user: { name: 'Mike T.', avatarInitials: 'MT', color: '#2E8B57' },
-    distance: '1.2 km away',
-    type: 'seek_scraps',
-    title: 'Seeking greens for my community garden',
-    description: 'We have a massive outdoor bin at the community garden and need more nitrogen-rich greens. Coffee grounds and fruit peels welcome.',
-    timeAgo: '5h ago'
+    nurseryName: 'Koramangala Greenery',
+    plantOffered: 'Marigold Seeds 🌼',
+    compostRequired: '500g',
+    distance: '2.5 km away',
+    timeEst: '10 mins drive',
+    availableSlots: ['Today 2PM-4PM', 'Tomorrow 4PM-6PM'],
+    imageColor: '#2E8B57',
+    coordinate: { latitude: 12.9250, longitude: 77.6300 },
+    actionType: 'drop_off',
+    vendorType: 'nursery',
+    rewardType: 'seeds',
   },
   {
     id: '3',
-    user: { name: 'Priya P.', avatarInitials: 'PP', color: '#D2691E' },
-    distance: '2.4 km away',
-    type: 'offer_scraps',
-    title: 'Bag of vegetable peels',
-    description: 'Made a huge batch of soup, have a big bag of carrot and potato peels. Anyone want them for their bin?',
-    timeAgo: '1d ago'
+    nurseryName: 'Ramu (Cart Puller)',
+    plantOffered: '₹50 Store Credit 💸',
+    compostRequired: '2kg',
+    distance: '0.8 km away',
+    timeEst: 'Moving',
+    availableSlots: ['Today 5PM-7PM', 'Tomorrow 9AM-11AM'],
+    imageColor: '#4682B4',
+    actionType: 'pick_up',
+    vendorType: 'cart_puller',
+    rewardType: 'discount',
+    currentLocationText: 'Currently near HSR Layout Sector 2',
   },
   {
     id: '4',
-    user: { name: 'David W.', avatarInitials: 'DW', color: '#4682B4' },
-    distance: '0.5 km away',
-    type: 'offer_compost',
-    title: 'Small batch of fresh compost',
-    description: 'Perfect for a couple of potted plants. I can leave it on my porch for pickup.',
-    timeAgo: '2d ago'
+    nurseryName: 'Suresh (Mobile Nursery)',
+    plantOffered: 'Potted Basil 🌿',
+    compostRequired: '1.5kg',
+    distance: '1.5 km away',
+    timeEst: 'Moving',
+    availableSlots: ['Today 6PM-8PM', 'Tomorrow 11AM-1PM'],
+    imageColor: '#8B4513',
+    actionType: 'pick_up',
+    vendorType: 'cart_puller',
+    rewardType: 'plant',
+    currentLocationText: 'Currently near Indiranagar 100ft Rd',
   }
 ];
 
 export function MarketplaceScreen() {
-  const navigation = useNavigation<any>();
-  const [filter, setFilter] = useState<'all' | 'offer' | 'seek'>('all');
+  const [actionFilter, setActionFilter] = useState<'all' | 'drop_off' | 'pick_up'>('all');
+  const [rewardFilter, setRewardFilter] = useState<'all' | 'plant' | 'seeds' | 'discount'>('all');
+  
+  const [bookingModalVisible, setBookingModalVisible] = useState(false);
+  const [bookingOffer, setBookingOffer] = useState<Offer | null>(null);
+  const [selectedSlot, setSelectedSlot] = useState<string>('');
 
-  const filteredListings = mockListings.filter(listing => {
-    if (filter === 'all') return true;
-    if (filter === 'offer') return listing.type.startsWith('offer');
-    if (filter === 'seek') return listing.type.startsWith('seek');
+  const filteredOffers = mockOffers.filter(offer => {
+    if (actionFilter !== 'all' && offer.actionType !== actionFilter) return false;
+    if (rewardFilter !== 'all' && offer.rewardType !== rewardFilter) return false;
     return true;
   });
 
-  const getTypeStyle = (type: string) => {
-    switch(type) {
-      case 'offer_compost': return { bg: '#E8F5E9', text: '#2E7D32', label: 'Offering Compost', icon: 'leaf' };
-      case 'offer_scraps': return { bg: '#FFF3E0', text: '#E65100', label: 'Offering Scraps', icon: 'nutrition' };
-      case 'seek_scraps': return { bg: '#E3F2FD', text: '#1565C0', label: 'Seeking Scraps', icon: 'search' };
-      default: return { bg: '#F5F5F5', text: '#616161', label: 'Unknown', icon: 'help' };
+  const getRewardIcon = (type: string) => {
+    switch (type) {
+      case 'plant': return 'leaf';
+      case 'seeds': return 'flower';
+      case 'discount': return 'pricetag';
+      default: return 'gift';
     }
   };
 
-  const renderListing = ({ item }: { item: Listing }) => {
-    const style = getTypeStyle(item.type);
+  const openBookingModal = (offer: Offer) => {
+    setBookingOffer(offer);
+    setSelectedSlot(offer.availableSlots[0]);
+    setBookingModalVisible(true);
+  };
+
+  const confirmBooking = () => {
+    setBookingModalVisible(false);
+    if (bookingOffer?.actionType === 'pick_up') {
+      Alert.alert(
+        "Pick-up Requested! 🚚", 
+        `Your request has been sent to ${bookingOffer?.nurseryName}. They will arrive at your registered home address for the ${selectedSlot} slot.`
+      );
+    } else {
+      Alert.alert(
+        "Booking Confirmed! 🎉", 
+        `Your drop-off at ${bookingOffer?.nurseryName} is scheduled for ${selectedSlot}. Navigation is ready when you are!`
+      );
+    }
+  };
+
+  const showLocation = (offer: Offer) => {
+    if (offer.coordinate) {
+      const url = `https://www.google.com/maps/search/?api=1&query=${offer.coordinate.latitude},${offer.coordinate.longitude}`;
+      Linking.openURL(url).catch(err => {
+        Alert.alert("Error", "Couldn't open Google Maps");
+        console.error("Failed to open URL:", err);
+      });
+    } else {
+      Alert.alert("Live Location", offer.currentLocationText || "Vendor is mobile.");
+    }
+  };
+
+  const renderOfferCard = ({ item }: { item: Offer }) => {
+    const isCartPuller = item.vendorType === 'cart_puller';
+    const isPickUp = item.actionType === 'pick_up';
+
     return (
       <View style={styles.card}>
+        {/* Vendor Header */}
         <View style={styles.cardHeader}>
-          <View style={styles.userSection}>
-            <View style={[styles.avatar, { backgroundColor: item.user.color }]}>
-              <Text style={styles.avatarText}>{item.user.avatarInitials}</Text>
+          <View style={styles.nurserySection}>
+            <View style={[styles.avatar, { backgroundColor: item.imageColor }]}>
+              {isCartPuller ? (
+                <MaterialCommunityIcons name="cart-variant" size={24} color="#FFFFFF" />
+              ) : (
+                <Ionicons name="storefront" size={24} color="#FFFFFF" />
+              )}
             </View>
-            <View>
-              <Text style={styles.userName}>{item.user.name}</Text>
-              <View style={styles.distanceRow}>
-                <Ionicons name="location-outline" size={12} color="#7A6A5A" />
-                <Text style={styles.distanceText}>{item.distance}</Text>
-              </View>
+            <View style={{ flex: 1 }}>
+              <Text style={styles.nurseryName}>{item.nurseryName}</Text>
+              
+              {isCartPuller ? (
+                <View style={styles.liveLocationRow}>
+                  <Ionicons name="radio" size={14} color="#D97706" />
+                  <Text style={styles.liveLocationText}>{item.currentLocationText}</Text>
+                </View>
+              ) : (
+                <TouchableOpacity style={styles.distanceRow} onPress={() => showLocation(item)}>
+                  <Ionicons name="location" size={14} color="#5C8D42" />
+                  <Text style={styles.distanceText}>{item.distance}</Text>
+                  <Text style={styles.viewMapText}>(View Map)</Text>
+                </TouchableOpacity>
+              )}
             </View>
           </View>
-          <Text style={styles.timeText}>{item.timeAgo}</Text>
+        </View>
+        
+        {/* Badges */}
+        <View style={styles.badgeRow}>
+          <View style={[styles.badge, isPickUp ? styles.badgePickUp : styles.badgeDropOff]}>
+            <Ionicons name={isPickUp ? "bicycle" : "walk"} size={14} color={isPickUp ? "#1D4ED8" : "#4338CA"} style={{ marginRight: 6 }} />
+            <Text style={[styles.badgeText, { color: isPickUp ? "#1D4ED8" : "#4338CA" }]}>
+              {isPickUp ? "Pick-up Available" : "Drop-off Only"}
+            </Text>
+          </View>
+
+          <View style={[styles.badge, { backgroundColor: '#F3F4F6' }]}>
+            <Ionicons name={getRewardIcon(item.rewardType) as any} size={14} color="#4B5563" style={{ marginRight: 6 }} />
+            <Text style={[styles.badgeText, { color: '#4B5563' }]}>
+              {item.rewardType.charAt(0).toUpperCase() + item.rewardType.slice(1)}
+            </Text>
+          </View>
         </View>
 
-        <View style={[styles.badge, { backgroundColor: style.bg }]}>
-          <Ionicons name={style.icon as any} size={12} color={style.text} style={{ marginRight: 4 }} />
-          <Text style={[styles.badgeText, { color: style.text }]}>{style.label}</Text>
+        {/* Offer Details */}
+        <View style={styles.offerSection}>
+          <Text style={styles.offerTitle}>Get {item.plantOffered}</Text>
+          <View style={styles.exchangeRow}>
+            <Ionicons name="sync-circle" size={24} color="#5C8D42" style={{ marginRight: 8 }} />
+            <Text style={styles.exchangeText}>
+              In exchange for <Text style={styles.highlightText}>{item.compostRequired} of Compost</Text>
+            </Text>
+          </View>
         </View>
 
-        <Text style={styles.title}>{item.title}</Text>
-        <Text style={styles.description}>{item.description}</Text>
-
+        {/* CTA Button */}
         <TouchableOpacity 
-          style={styles.messageButton}
-          onPress={() => Alert.alert("Message Sent!", `Your message to ${item.user.name.split(' ')[0]} has been sent.`)}
+          style={[styles.bookButton, isPickUp && styles.pickUpButton]}
+          onPress={() => openBookingModal(item)}
         >
-          <Ionicons name="chatbubble-outline" size={16} color="#FFFFFF" />
-          <Text style={styles.messageButtonText}>Message {item.user.name.split(' ')[0]}</Text>
+          <Text style={styles.bookButtonText}>{isPickUp ? "Request Pick-up" : "Book Drop-off"}</Text>
+          <Ionicons name="arrow-forward" size={18} color="#FFFFFF" style={{ marginLeft: 8 }} />
         </TouchableOpacity>
       </View>
     );
   };
 
-  return (
-    <SafeAreaView style={styles.container}>
-      {/* Header */}
+  const ListHeader = () => (
+    <View>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Exchange</Text>
-        <Text style={styles.headerSubtitle}>Trade compost and scraps with your community</Text>
+        <Text style={styles.headerTitle}>Compost Exchange</Text>
+        <Text style={styles.headerSubtitle}>Connect with nurseries or cart pullers near you.</Text>
       </View>
 
-      {/* Filters */}
-      <View style={styles.filterContainer}>
-        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24 }}>
-          <TouchableOpacity 
-            style={[styles.filterChip, filter === 'all' && styles.filterChipActive]}
-            onPress={() => setFilter('all')}
-          >
-            <Text style={[styles.filterText, filter === 'all' && styles.filterTextActive]}>All</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.filterChip, filter === 'offer' && styles.filterChipActive]}
-            onPress={() => setFilter('offer')}
-          >
-            <Text style={[styles.filterText, filter === 'offer' && styles.filterTextActive]}>Offering</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.filterChip, filter === 'seek' && styles.filterChipActive]}
-            onPress={() => setFilter('seek')}
-          >
-            <Text style={[styles.filterText, filter === 'seek' && styles.filterTextActive]}>Seeking</Text>
-          </TouchableOpacity>
+      <View style={styles.filterSection}>
+        <Text style={styles.filterLabel}>Service Type</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 12 }}>
+          {['all', 'pick_up', 'drop_off'].map((cat) => (
+            <TouchableOpacity 
+              key={cat}
+              style={[styles.filterChip, actionFilter === cat && styles.filterChipActive]}
+              onPress={() => setActionFilter(cat as any)}
+            >
+              <Text style={[styles.filterText, actionFilter === cat && styles.filterTextActive]}>
+                {cat === 'all' ? 'All' : cat === 'pick_up' ? 'Pick-up' : 'Drop-off'}
+              </Text>
+            </TouchableOpacity>
+          ))}
+        </ScrollView>
+
+        <Text style={styles.filterLabel}>Reward Type</Text>
+        <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerStyle={{ paddingHorizontal: 24, paddingBottom: 20 }}>
+          {['all', 'plant', 'seeds', 'discount'].map((cat) => (
+            <TouchableOpacity 
+              key={cat}
+              style={[styles.filterChip, rewardFilter === cat && styles.filterChipActive]}
+              onPress={() => setRewardFilter(cat as any)}
+            >
+              <Text style={[styles.filterText, rewardFilter === cat && styles.filterTextActive]}>
+                {cat.charAt(0).toUpperCase() + cat.slice(1)}
+              </Text>
+            </TouchableOpacity>
+          ))}
         </ScrollView>
       </View>
+    </View>
+  );
 
-      {/* Listings */}
+  return (
+    <SafeAreaView style={styles.container} edges={['top']}>
       <FlatList
-        data={filteredListings}
+        data={filteredOffers}
         keyExtractor={(item) => item.id}
-        renderItem={renderListing}
+        renderItem={renderOfferCard}
+        ListHeaderComponent={ListHeader}
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
       />
 
-      {/* FAB */}
-      <TouchableOpacity style={styles.fab} onPress={() => {}}>
-        <Ionicons name="add" size={28} color="#FFFFFF" />
-      </TouchableOpacity>
+      {/* Booking Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={bookingModalVisible}
+        onRequestClose={() => setBookingModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>
+                {bookingOffer?.actionType === 'pick_up' ? 'Request Pick-up' : 'Book Drop-off'}
+              </Text>
+              <TouchableOpacity onPress={() => setBookingModalVisible(false)}>
+                <Ionicons name="close-circle" size={28} color="#7A6A5A" />
+              </TouchableOpacity>
+            </View>
+            
+            {bookingOffer && (
+              <>
+                <View style={styles.modalDetails}>
+                  <View style={styles.modalDetailRow}>
+                    {bookingOffer.vendorType === 'cart_puller' ? (
+                      <Ionicons name="radio" size={20} color="#D97706" />
+                    ) : (
+                      <Ionicons name="location-outline" size={20} color="#5C8D42" />
+                    )}
+                    <View style={{ marginLeft: 12, flex: 1 }}>
+                      <Text style={styles.modalDetailTitle}>{bookingOffer.nurseryName}</Text>
+                      {bookingOffer.vendorType === 'cart_puller' ? (
+                        <Text style={styles.modalDetailSubtitle}>{bookingOffer.currentLocationText}</Text>
+                      ) : (
+                        <Text style={styles.modalDetailSubtitle}>{bookingOffer.distance} • {bookingOffer.timeEst}</Text>
+                      )}
+                    </View>
+                  </View>
+                  
+                  <View style={styles.modalExchangeBox}>
+                    <Text style={styles.modalExchangeTitle}>Exchange Summary</Text>
+                    {bookingOffer.actionType === 'pick_up' ? (
+                      <Text style={styles.modalExchangeBody}>Give <Text style={{fontWeight: 'bold', color: '#2E7D32'}}>{bookingOffer.compostRequired}</Text> of compost at your door</Text>
+                    ) : (
+                      <Text style={styles.modalExchangeBody}>Bring <Text style={{fontWeight: 'bold', color: '#2E7D32'}}>{bookingOffer.compostRequired}</Text> of compost to the location</Text>
+                    )}
+                    <Text style={styles.modalExchangeBody}>Receive <Text style={{fontWeight: 'bold', color: '#2E7D32'}}>1x {bookingOffer.plantOffered}</Text></Text>
+                  </View>
+                </View>
+
+                <Text style={styles.slotHeader}>Select a Time Slot</Text>
+                {bookingOffer.availableSlots.map(slot => (
+                  <TouchableOpacity 
+                    key={slot}
+                    style={[styles.slotButton, selectedSlot === slot && styles.slotButtonActive]}
+                    onPress={() => setSelectedSlot(slot)}
+                  >
+                    <Text style={[styles.slotButtonText, selectedSlot === slot && styles.slotButtonTextActive]}>{slot}</Text>
+                    {selectedSlot === slot && <Ionicons name="checkmark-circle" size={20} color="#FFFFFF" />}
+                  </TouchableOpacity>
+                ))}
+
+                <TouchableOpacity 
+                  style={[styles.confirmBookingButton, bookingOffer.actionType === 'pick_up' && { backgroundColor: '#1D4ED8' }]} 
+                  onPress={confirmBooking}
+                >
+                  <Text style={styles.confirmBookingText}>
+                    {bookingOffer.actionType === 'pick_up' ? "Confirm Pick-up" : "Confirm Appointment"}
+                  </Text>
+                </TouchableOpacity>
+              </>
+            )}
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -170,9 +348,12 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FAF8F2',
   },
+  listContent: {
+    paddingBottom: 120, // To clear the tab bar
+  },
   header: {
     paddingHorizontal: 24,
-    paddingTop: 16,
+    paddingTop: 24,
     paddingBottom: 16,
   },
   headerTitle: {
@@ -186,48 +367,59 @@ const styles = StyleSheet.create({
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
     fontSize: 14,
     color: '#7A6A5A',
+    lineHeight: 20,
   },
-  filterContainer: {
-    marginBottom: 16,
+  filterSection: {
+    marginBottom: 8,
+  },
+  filterLabel: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#A8A29E',
+    textTransform: 'uppercase',
+    paddingHorizontal: 24,
+    marginBottom: 8,
+    marginTop: 4,
   },
   filterChip: {
     paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
+    paddingVertical: 10,
+    borderRadius: 24,
     backgroundColor: '#FFFFFF',
     borderWidth: 1,
     borderColor: '#E5E0D8',
-    marginRight: 12,
+    marginRight: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
   },
   filterChipActive: {
-    backgroundColor: '#2C1E16',
-    borderColor: '#2C1E16',
+    backgroundColor: '#5C8D42',
+    borderColor: '#5C8D42',
   },
   filterText: {
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
     fontSize: 14,
-    fontWeight: '600',
     color: '#7A6A5A',
+    fontWeight: '600',
   },
   filterTextActive: {
     color: '#FFFFFF',
   },
-  listContent: {
-    paddingHorizontal: 24,
-    paddingBottom: 100,
-  },
   card: {
     backgroundColor: '#FFFFFF',
     borderRadius: 24,
-    padding: 20,
-    marginBottom: 16,
+    padding: 24,
+    marginHorizontal: 24,
+    marginBottom: 20,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 8,
-    elevation: 2,
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 4,
     borderWidth: 1,
-    borderColor: '#F0F0F0',
+    borderColor: '#F0EBE1',
   },
   cardHeader: {
     flexDirection: 'row',
@@ -235,104 +427,219 @@ const styles = StyleSheet.create({
     alignItems: 'flex-start',
     marginBottom: 12,
   },
-  userSection: {
+  nurserySection: {
     flexDirection: 'row',
     alignItems: 'center',
+    flex: 1,
   },
   avatar: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 12,
+    marginRight: 16,
   },
-  avatarText: {
-    color: '#FFFFFF',
-    fontSize: 16,
-    fontWeight: 'bold',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-  },
-  userName: {
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-    fontSize: 16,
+  nurseryName: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#2C1E16',
-    marginBottom: 2,
+    marginBottom: 4,
   },
   distanceRow: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   distanceText: {
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-    fontSize: 12,
-    color: '#7A6A5A',
-    marginLeft: 4,
+    fontSize: 14,
+    color: '#5C8D42',
+    marginLeft: 6,
+    fontWeight: '600',
   },
-  timeText: {
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  viewMapText: {
     fontSize: 12,
-    color: '#A4A4A4',
+    color: '#888',
+    marginLeft: 6,
+    textDecorationLine: 'underline',
   },
-  badge: {
-    alignSelf: 'flex-start',
+  liveLocationRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
+  },
+  liveLocationText: {
+    fontSize: 13,
+    color: '#D97706',
+    marginLeft: 6,
+    fontWeight: '600',
+  },
+  badgeRow: {
+    flexDirection: 'row',
+    marginBottom: 20,
+    gap: 8,
+  },
+  badge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
     borderRadius: 12,
-    marginBottom: 12,
+  },
+  badgePickUp: {
+    backgroundColor: '#DBEAFE',
+  },
+  badgeDropOff: {
+    backgroundColor: '#E0E7FF',
   },
   badgeText: {
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-    fontSize: 11,
-    fontWeight: 'bold',
-    textTransform: 'uppercase',
+    fontSize: 12,
+    fontWeight: '700',
   },
-  title: {
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
+  offerSection: {
+    backgroundColor: '#F9FBF8',
+    borderRadius: 16,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#E8F5E9',
+  },
+  offerTitle: {
     fontSize: 18,
     fontWeight: 'bold',
     color: '#2C1E16',
     marginBottom: 8,
   },
-  description: {
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-    fontSize: 14,
-    color: '#555555',
-    lineHeight: 20,
-    marginBottom: 16,
+  exchangeRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
-  messageButton: {
-    backgroundColor: '#5C8D42',
+  exchangeText: {
+    fontSize: 15,
+    color: '#4A4A4A',
+  },
+  highlightText: {
+    fontWeight: 'bold',
+    color: '#2E7D32',
+  },
+  bookButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingVertical: 12,
+    backgroundColor: '#5C8D42',
+    paddingVertical: 16,
     borderRadius: 16,
   },
-  messageButtonText: {
-    color: '#FFFFFF',
-    fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginLeft: 8,
+  pickUpButton: {
+    backgroundColor: '#1D4ED8',
   },
-  fab: {
-    position: 'absolute',
-    bottom: 30, // Usually placed above tab bar, but since it's inside tab, 30 is fine
-    right: 24,
-    backgroundColor: '#2C1E16',
-    width: 60,
-    height: 60,
-    borderRadius: 30,
-    justifyContent: 'center',
-    alignItems: 'center',
+  bookButtonText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+  },
+  modalContent: {
+    backgroundColor: '#FFFFFF',
+    borderTopLeftRadius: 32,
+    borderTopRightRadius: 32,
+    padding: 24,
+    paddingBottom: 40,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.2,
-    shadowRadius: 8,
-    elevation: 5,
-  }
+    shadowOffset: { width: 0, height: -4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  modalHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  modalTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2C1E16',
+  },
+  modalDetails: {
+    marginBottom: 24,
+  },
+  modalDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  modalDetailTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2C1E16',
+    marginBottom: 2,
+  },
+  modalDetailSubtitle: {
+    fontSize: 14,
+    color: '#7A6A5A',
+  },
+  modalExchangeBox: {
+    backgroundColor: '#E8F5E9',
+    borderRadius: 16,
+    padding: 16,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  modalExchangeTitle: {
+    fontSize: 12,
+    textTransform: 'uppercase',
+    color: '#2E7D32',
+    fontWeight: 'bold',
+    marginBottom: 8,
+  },
+  modalExchangeBody: {
+    fontSize: 15,
+    color: '#4A4A4A',
+    marginBottom: 4,
+  },
+  slotHeader: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2C1E16',
+    marginBottom: 12,
+  },
+  slotButton: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    padding: 16,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#E5E0D8',
+    marginBottom: 12,
+  },
+  slotButtonActive: {
+    backgroundColor: '#5C8D42',
+    borderColor: '#5C8D42',
+  },
+  slotButtonText: {
+    fontSize: 15,
+    color: '#4A4A4A',
+    fontWeight: '500',
+  },
+  slotButtonTextActive: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+  },
+  confirmBookingButton: {
+    backgroundColor: '#2C1E16',
+    padding: 16,
+    borderRadius: 16,
+    alignItems: 'center',
+    marginTop: 12,
+  },
+  confirmBookingText: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    fontSize: 16,
+  },
 });
