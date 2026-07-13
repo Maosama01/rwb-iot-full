@@ -22,7 +22,7 @@ const GOOGLE_WEB_CLIENT_ID = '285619042578-5vmbqaiprrjdol2v9tvaqjp2fklo5skq.apps
 
 const AnimatedPressable = Animated.createAnimatedComponent(Pressable);
 
-function InteractiveButton({ onPress, children, style, disabled, type }: any) {
+const InteractiveButton = React.memo(({ onPress, children, style, disabled, type }: any) => {
   const isPressed = useSharedValue(0);
 
   const animatedStyle = useAnimatedStyle(() => {
@@ -63,7 +63,7 @@ function InteractiveButton({ onPress, children, style, disabled, type }: any) {
       {children}
     </AnimatedPressable>
   );
-}
+});
 
 function PasswordRequirements({ password }: { password: string }) {
   const hasLength = password.length >= 8;
@@ -207,6 +207,35 @@ const extractError = (err: any, defaultMsg: string) => {
   if (err?.message) return err.message;
   return defaultMsg;
 };
+
+const BackgroundLeaves = React.memo(() => (
+  <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+    <Svg width={300} height={300} style={{ position: 'absolute', top: -50, left: -100 }} opacity={0.6}>
+      <Path 
+        d="M100 50 C200 50 300 150 250 250 C150 250 50 150 100 50 Z" 
+        fill="#EAF4E8" 
+      />
+      <Path 
+        d="M100 50 C150 100 200 150 250 250" 
+        stroke="#FFFFFF" 
+        strokeWidth={2} 
+        fill="none" 
+      />
+    </Svg>
+
+    <Svg width={250} height={350} style={{ position: 'absolute', bottom: -50, right: -50 }} opacity={0.4}>
+      <Path 
+        d="M150 350 C100 250 50 150 100 50 C200 100 250 200 150 350 Z" 
+        stroke="#D8EAD6" 
+        strokeWidth={4} 
+        fill="none" 
+      />
+      <Path d="M100 50 C120 150 135 250 150 350" stroke="#D8EAD6" strokeWidth={3} fill="none" />
+      <Path d="M125 200 C150 220 180 230 200 230" stroke="#D8EAD6" strokeWidth={2} fill="none" />
+      <Path d="M115 120 C130 140 160 150 180 150" stroke="#D8EAD6" strokeWidth={2} fill="none" />
+    </Svg>
+  </View>
+));
 
 export function LoginScreen() {
   const navigation = useNavigation<any>();
@@ -470,32 +499,7 @@ export function LoginScreen() {
     <View style={{ flex: 1, backgroundColor: '#FAF8F2' }}>
       
       {/* Background Leaves from Image Reference */}
-      <View pointerEvents="none" style={StyleSheet.absoluteFill}>
-        <Svg width={300} height={300} style={{ position: 'absolute', top: -50, left: -100 }} opacity={0.6}>
-          <Path 
-            d="M100 50 C200 50 300 150 250 250 C150 250 50 150 100 50 Z" 
-            fill="#EAF4E8" 
-          />
-          <Path 
-            d="M100 50 C150 100 200 150 250 250" 
-            stroke="#FFFFFF" 
-            strokeWidth={2} 
-            fill="none" 
-          />
-        </Svg>
-
-        <Svg width={250} height={350} style={{ position: 'absolute', bottom: -50, right: -50 }} opacity={0.4}>
-          <Path 
-            d="M150 350 C100 250 50 150 100 50 C200 100 250 200 150 350 Z" 
-            stroke="#D8EAD6" 
-            strokeWidth={4} 
-            fill="none" 
-          />
-          <Path d="M100 50 C120 150 135 250 150 350" stroke="#D8EAD6" strokeWidth={3} fill="none" />
-          <Path d="M125 200 C150 220 180 230 200 230" stroke="#D8EAD6" strokeWidth={2} fill="none" />
-          <Path d="M115 120 C130 140 160 150 180 150" stroke="#D8EAD6" strokeWidth={2} fill="none" />
-        </Svg>
-      </View>
+      <BackgroundLeaves />
 
       <KeyboardAvoidingView behavior={Platform.OS === 'ios' ? 'padding' : 'height'} style={{ flex: 1 }}>
         <ScrollView 

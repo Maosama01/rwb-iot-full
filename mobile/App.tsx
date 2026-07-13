@@ -10,9 +10,6 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Nunito_400Regular, Nunito_700Bold, Nunito_900Black } from '@expo-google-fonts/nunito';
-import { Quicksand_500Medium, Quicksand_700Bold } from '@expo-google-fonts/quicksand';
-import { SourceSansPro_400Regular, SourceSansPro_600SemiBold, SourceSansPro_700Bold } from '@expo-google-fonts/source-sans-pro';
-import { Inter_400Regular, Inter_500Medium, Inter_600SemiBold, Inter_700Bold, Inter_900Black } from '@expo-google-fonts/inter';
 
 import { LoginScreen } from './src/screens/LoginScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
@@ -148,16 +145,6 @@ export default function App() {
     Nunito_400Regular,
     Nunito_700Bold,
     Nunito_900Black,
-    'Quicksand-Medium': Quicksand_500Medium,
-    'Quicksand-Bold': Quicksand_700Bold,
-    'SourceSansPro-Regular': SourceSansPro_400Regular,
-    'SourceSansPro-SemiBold': SourceSansPro_600SemiBold,
-    'SourceSansPro-Bold': SourceSansPro_700Bold,
-    'Inter-Regular': Inter_400Regular,
-    'Inter-Medium': Inter_500Medium,
-    'Inter-SemiBold': Inter_600SemiBold,
-    'Inter-Bold': Inter_700Bold,
-    'Inter-Black': Inter_900Black,
   });
 
   useEffect(() => {

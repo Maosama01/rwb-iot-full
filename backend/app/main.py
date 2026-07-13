@@ -77,19 +77,9 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     )
     await redis.ping()
     logger.info("Redis connection OK.")
-
-    import asyncio
-    from app.services.demo_simulator import run_demo_simulator
-    demo_task = asyncio.create_task(run_demo_simulator())
-
     yield  # ── application runs here ──────────────────────────────────────
 
     logger.info("Shutting down — closing connections…")
-    demo_task.cancel()
-    try:
-        await demo_task
-    except asyncio.CancelledError:
-        pass
 
     await engine.dispose()
     await redis.aclose()
