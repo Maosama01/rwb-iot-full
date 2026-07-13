@@ -23,6 +23,7 @@ The system runs entirely locally using **Docker Compose** for the backend, along
 
 - 🎨 **Mobile App (`mobile`)**: React Native (Expo) app with a premium "Rawbin-like" glassmorphic aesthetic, NativeWind (Tailwind CSS), SMS OTP login, and a dynamic hardware simulator.
 - 🤖 **AI Features**: Integrated with Gemini 2.5 Flash for visual waste inspection (`/check-item-vision`) and zero-waste recipe generation.
+- 💬 **WhatsApp Bot & Push Notifications**: Fully integrated with Twilio for bilingual (Hindi/English) automated marketplace negotiations and Firebase Cloud Messaging for real-time mobile push alerts.
 - ⚡ **API (`api`)**: FastAPI backend for device pairing, auth, historical data, and AI processing endpoints.
 - 🗄️ **Database (`db`)**: PostgreSQL 16 + TimescaleDB for high-performance time-series sensor readings.
 - 🚀 **Cache & Broker (`redis`)**: Redis 7 for Celery message brokering and caching.
@@ -56,6 +57,10 @@ graph TD
     subgraph "Client"
         App[React Native Mobile App]
     end
+    subgraph "External APIs"
+        Twilio[Twilio WhatsApp API]
+        Firebase[Firebase Cloud Messaging]
+    end
 
     Sim -- Publishes Telemetry --> MQTT
     MQTT -- Subscribes --> Worker
@@ -63,6 +68,9 @@ graph TD
     
     API -- Reads/Writes --> DB
     API -- Enqueues Tasks --> Redis
+    API -- Webhooks & Messaging --> Twilio
+    API -- Push Notifications --> Firebase
+    Twilio -- Webhook Callbacks --> API
     Redis -- Executes Tasks --> Celery
     Celery -- Writes Results --> DB
     
@@ -114,7 +122,7 @@ With the stack running, everything is immediately accessible!
 - **Hardware Simulator**: Built right into the app's dashboard. Once you log in (using the seamless SMS OTP system), you can activate the simulator to instantly visualize live metrics and 30-day composting cycles!
 - **Virtual Bin Avatar 🌱**: A "Digital Twin" Tamagotchi-style avatar on the dashboard that reacts in real-time to the MQTT telemetry (temperature & humidity) to show you how healthy your compost is.
 - **AI Compost Checker 📸**: Tap the camera icon in the *Can It Compost?* tab to snap a photo of any waste item. Gemini AI will instantly tell you if it's compostable, recyclable, or trash!
-- **Neighborhood Exchange 🤝**: A community marketplace tab where users can list their finished "Black Gold" or raw food scraps to trade with neighbors.
+- **Neighborhood Exchange & WhatsApp Bot 🤝**: A community marketplace where users can trade their finished "Black Gold" or raw food scraps. When a user books an offer (e.g., from a local Cart Puller), the backend triggers a bilingual (Hindi/English) Twilio WhatsApp message to the vendor. When the vendor replies "हाँ" (Yes), the user instantly receives a Firebase push notification that their request is accepted!
 - **SaveMyFood Recipes 🍳**: Generate zero-waste recipes to use up leftovers before they go bad.
 
 ### 📱 Opening on Your Phone (Local Network Testing)

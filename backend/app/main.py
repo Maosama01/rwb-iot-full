@@ -36,6 +36,8 @@ from app.api.v1 import (
     analytics,
     ai,
     plants,
+    whatsapp,
+    marketplace,
 )
 from app.core.config import get_settings
 from app.core.logging import configure_logging
@@ -129,6 +131,8 @@ def create_app() -> FastAPI:
     app.include_router(ai.router, prefix=API_PREFIX)
     app.include_router(plants.router, prefix=API_PREFIX)
     app.include_router(admin.router, prefix=API_PREFIX)
+    app.include_router(whatsapp.router, prefix=API_PREFIX)
+    app.include_router(marketplace.router, prefix=API_PREFIX)
 
     # ── Health check (ECS / ALB target group health probe) ───────────────────
     @app.get("/health", tags=["Infra"], include_in_schema=False)

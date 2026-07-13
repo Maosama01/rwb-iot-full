@@ -57,9 +57,9 @@ Built on PostgreSQL 16 and TimescaleDB for ultra-fast time-series queries.
 ```text
 app/
   main.py            # FastAPI initialization & DB lifespan
-  api/v1/            # API Routers (auth, telemetry, analytics, garden, ai)
-  core/              # Configuration, MQTT client, Security, JWT logic
-  db/                # SQLAlchemy Models & Connection Pooling
+  api/v1/            # API Routers (auth, telemetry, analytics, garden, ai, marketplace, whatsapp)
+  core/              # Configuration, MQTT client, Security, JWT logic, Firebase Admin
+  db/                # SQLAlchemy Models (including Exchanges) & Connection Pooling
   schemas/           # Pydantic validation models
   services/          # Decoupled business logic (OTP, access control)
   workers/           # Celery tasks and continuous MQTT ingestion loop

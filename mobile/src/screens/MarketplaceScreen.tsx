@@ -1,7 +1,18 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Platform, FlatList, Modal, Alert, Linking } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { Ionicons, MaterialCommunityIcons } from '@expo/vector-icons';
+import apiClient from '../api/client';
+
+interface ExchangeHistory {
+  id: string;
+  vendor_name: string;
+  status: string;
+  compost_amount: string;
+  reward_type: string;
+  action_type: string;
+  created_at: string;
+}
 
 interface Offer {
   id: string;
@@ -22,6 +33,7 @@ interface Offer {
   vendorType: 'nursery' | 'cart_puller';
   rewardType: 'plant' | 'seeds' | 'discount';
   currentLocationText?: string;
+  validUntil?: string;
 }
 
 const mockOffers: Offer[] = [
@@ -38,6 +50,7 @@ const mockOffers: Offer[] = [
     actionType: 'drop_off',
     vendorType: 'nursery',
     rewardType: 'plant',
+    validUntil: 'Today 6:00 PM',
   },
   {
     id: '2',
@@ -52,6 +65,7 @@ const mockOffers: Offer[] = [
     actionType: 'drop_off',
     vendorType: 'nursery',
     rewardType: 'seeds',
+    validUntil: 'Tomorrow 12:00 PM',
   },
   {
     id: '3',
@@ -66,6 +80,7 @@ const mockOffers: Offer[] = [
     vendorType: 'cart_puller',
     rewardType: 'discount',
     currentLocationText: 'Currently near HSR Layout Sector 2',
+    validUntil: 'Today 7:00 PM',
   },
   {
     id: '4',
@@ -80,6 +95,7 @@ const mockOffers: Offer[] = [
     vendorType: 'cart_puller',
     rewardType: 'plant',
     currentLocationText: 'Currently near Indiranagar 100ft Rd',
+    validUntil: 'Only 2 left',
   }
 ];
 
@@ -90,6 +106,26 @@ export function MarketplaceScreen() {
   const [bookingModalVisible, setBookingModalVisible] = useState(false);
   const [bookingOffer, setBookingOffer] = useState<Offer | null>(null);
   const [selectedSlot, setSelectedSlot] = useState<string>('');
+  const [completedExchanges, setCompletedExchanges] = useState<number>(0);
+  const [myExchanges, setMyExchanges] = useState<ExchangeHistory[]>([]);
+  const [requestsModalVisible, setRequestsModalVisible] = useState(false);
+
+  useEffect(() => {
+    fetchMyExchanges();
+  }, []);
+
+  const fetchMyExchanges = async () => {
+    try {
+      const response = await apiClient.get('/marketplace/exchanges/me');
+      const exchanges: ExchangeHistory[] = response.data.exchanges || [];
+      setMyExchanges(exchanges);
+      
+      const acceptedCount = exchanges.filter(e => e.status === 'accepted' || e.status === 'completed').length;
+      setCompletedExchanges(acceptedCount);
+    } catch (err) {
+      console.warn("Could not fetch exchanges", err);
+    }
+  };
 
   const filteredOffers = mockOffers.filter(offer => {
     if (actionFilter !== 'all' && offer.actionType !== actionFilter) return false;
@@ -112,18 +148,34 @@ export function MarketplaceScreen() {
     setBookingModalVisible(true);
   };
 
-  const confirmBooking = () => {
+  const confirmBooking = async () => {
     setBookingModalVisible(false);
-    if (bookingOffer?.actionType === 'pick_up') {
-      Alert.alert(
-        "Pick-up Requested! 🚚", 
-        `Your request has been sent to ${bookingOffer?.nurseryName}. They will arrive at your registered home address for the ${selectedSlot} slot.`
-      );
-    } else {
-      Alert.alert(
-        "Booking Confirmed! 🎉", 
-        `Your drop-off at ${bookingOffer?.nurseryName} is scheduled for ${selectedSlot}. Navigation is ready when you are!`
-      );
+    if (!bookingOffer) return;
+
+    try {
+      await apiClient.post('/marketplace/exchanges', {
+        vendor_phone: "+1234567890", // Mocked phone for demo
+        vendor_name: bookingOffer.nurseryName,
+        compost_amount: bookingOffer.compostRequired,
+        reward_type: bookingOffer.rewardType,
+        action_type: bookingOffer.actionType,
+        vendor_type: bookingOffer.vendorType
+      });
+      
+      if (bookingOffer.actionType === 'pick_up') {
+        Alert.alert(
+          "Request Sent! ⏳", 
+          `Your pick-up request has been sent to ${bookingOffer.nurseryName}. You will be notified once they accept.`
+        );
+      } else {
+        Alert.alert(
+          "Request Sent! ⏳", 
+          `Your drop-off request at ${bookingOffer.nurseryName} has been sent. You will be notified once they accept.`
+        );
+      }
+      fetchMyExchanges();
+    } catch (err) {
+      Alert.alert("Error", "Could not process booking. Please try again later.");
     }
   };
 
@@ -200,6 +252,12 @@ export function MarketplaceScreen() {
               In exchange for <Text style={styles.highlightText}>{item.compostRequired} of Compost</Text>
             </Text>
           </View>
+          {item.validUntil && (
+            <View style={styles.validityRow}>
+              <Ionicons name="hourglass-outline" size={14} color="#D97706" />
+              <Text style={styles.validityText}>Valid until: {item.validUntil}</Text>
+            </View>
+          )}
         </View>
 
         {/* CTA Button */}
@@ -217,8 +275,18 @@ export function MarketplaceScreen() {
   const ListHeader = () => (
     <View>
       <View style={styles.header}>
-        <Text style={styles.headerTitle}>Compost Exchange</Text>
-        <Text style={styles.headerSubtitle}>Connect with nurseries or cart pullers near you.</Text>
+        <View style={styles.headerTopRow}>
+          <View style={{ flex: 1, paddingRight: 12 }}>
+            <Text style={styles.headerTitle}>Compost Exchange</Text>
+            <Text style={styles.headerSubtitle}>Connect with nurseries or cart pullers near you.</Text>
+          </View>
+          <TouchableOpacity 
+            style={styles.exchangesBadge}
+            onPress={() => setRequestsModalVisible(true)}
+          >
+            <Text style={styles.exchangesBadgeText}>🏆 {completedExchanges}</Text>
+          </TouchableOpacity>
+        </View>
       </View>
 
       <View style={styles.filterSection}>
@@ -339,6 +407,52 @@ export function MarketplaceScreen() {
           </View>
         </View>
       </Modal>
+
+      {/* My Requests Modal */}
+      <Modal
+        animationType="slide"
+        transparent={true}
+        visible={requestsModalVisible}
+        onRequestClose={() => setRequestsModalVisible(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={[styles.modalContent, { height: '80%' }]}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>My Requests</Text>
+              <TouchableOpacity onPress={() => setRequestsModalVisible(false)}>
+                <Ionicons name="close-circle" size={28} color="#7A6A5A" />
+              </TouchableOpacity>
+            </View>
+            
+            <FlatList
+              data={myExchanges}
+              keyExtractor={(item) => item.id}
+              ListEmptyComponent={
+                <Text style={{ textAlign: 'center', marginTop: 40, color: '#7A6A5A' }}>No requests yet.</Text>
+              }
+              renderItem={({ item }) => (
+                <View style={styles.historyCard}>
+                  <View style={styles.historyRow}>
+                    <Text style={styles.historyVendor}>{item.vendor_name}</Text>
+                    <View style={[
+                      styles.historyStatusBadge, 
+                      item.status === 'accepted' ? { backgroundColor: '#D1FAE5' } : { backgroundColor: '#FEF3C7' }
+                    ]}>
+                      <Text style={[
+                        styles.historyStatusText,
+                        item.status === 'accepted' ? { color: '#065F46' } : { color: '#92400E' }
+                      ]}>{item.status.toUpperCase()}</Text>
+                    </View>
+                  </View>
+                  <Text style={styles.historyDetail}>
+                    {item.action_type === 'pick_up' ? 'Pick-up' : 'Drop-off'} • {item.compost_amount} for {item.reward_type}
+                  </Text>
+                </View>
+              )}
+            />
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -355,6 +469,24 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     paddingTop: 24,
     paddingBottom: 16,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  exchangesBadge: {
+    backgroundColor: '#E8F5E9',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#C8E6C9',
+  },
+  exchangesBadgeText: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2E7D32',
   },
   headerTitle: {
     fontFamily: Platform.OS === 'ios' ? 'System' : 'Roboto',
@@ -520,6 +652,22 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#2E7D32',
   },
+  validityRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 12,
+    backgroundColor: '#FEF3C7',
+    alignSelf: 'flex-start',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  validityText: {
+    fontSize: 12,
+    color: '#D97706',
+    fontWeight: '600',
+    marginLeft: 4,
+  },
   bookButton: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -641,5 +789,37 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontWeight: 'bold',
     fontSize: 16,
+  },
+  historyCard: {
+    padding: 16,
+    borderRadius: 12,
+    backgroundColor: '#F9FBF8',
+    borderWidth: 1,
+    borderColor: '#E8F5E9',
+    marginBottom: 12,
+  },
+  historyRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  historyVendor: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2C1E16',
+  },
+  historyStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+  },
+  historyStatusText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+  },
+  historyDetail: {
+    fontSize: 14,
+    color: '#7A6A5A',
   },
 });
