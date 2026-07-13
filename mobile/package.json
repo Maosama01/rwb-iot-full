@@ -57,5 +57,10 @@
     "ios": "expo run:ios",
     "web": "expo start --web"
   },
-  "private": true
+  "private": true,
+  "overrides": {
+    "react-native-country-picker-modal": {
+      "react-async-hook": "$react-async-hook"
+    }
+  }
 }

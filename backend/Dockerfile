@@ -13,8 +13,13 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
-RUN pip install --upgrade pip \
- && pip install --no-cache-dir --prefix=/install -r requirements.txt
+
+# Skip pip self-upgrade (base image pip is sufficient; upgrade often times out on slow networks).
+# Increase timeout/retries for flaky PyPI downloads during parallel compose builds.
+ENV PIP_DEFAULT_TIMEOUT=120 \
+    PIP_RETRIES=5
+
+RUN pip install --no-cache-dir --prefix=/install -r requirements.txt
 
 
 # ──────────────────────────────────────────────────────────────────────────────

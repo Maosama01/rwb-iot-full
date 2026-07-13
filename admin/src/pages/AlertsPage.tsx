@@ -1,11 +1,14 @@
 // admin/src/pages/AlertsPage.tsx
 // ───────────────────────────────
 // Recent alert events across all devices (GET /admin/alerts).
+// Client-side search (metric/message/device) + severity + ack filters.
 
+import { useMemo, useState } from 'react';
 import { api } from '../api/client';
 import { useFetch } from '../hooks/useFetch';
 import DataTable, { Column } from '../components/DataTable';
 import Badge from '../components/Badge';
+import { Toolbar, SearchInput, FilterSelect } from '../components/Filters';
 import { fmtDateTime, fmtNum, shortId } from '../lib/format';
 
 interface AlertRow {
@@ -45,11 +48,56 @@ const columns: Column<AlertRow>[] = [
 export default function AlertsPage() {
   const { data, loading, error } = useFetch<AlertRow[]>(() => api.listAlerts());
 
+  const [query, setQuery] = useState('');
+  const [severity, setSeverity] = useState('all');
+  const [ack, setAck] = useState('all');
+
+  const rows = useMemo(() => {
+    if (!data) return null;
+    const q = query.trim().toLowerCase();
+    return data.filter((a) => {
+      const matchesQuery =
+        !q ||
+        a.metric.toLowerCase().includes(q) ||
+        a.message.toLowerCase().includes(q) ||
+        a.device_id.toLowerCase().includes(q);
+      const matchesSeverity = severity === 'all' || a.severity === severity;
+      const matchesAck =
+        ack === 'all' || (ack === 'acked' ? a.acknowledged : !a.acknowledged);
+      return matchesQuery && matchesSeverity && matchesAck;
+    });
+  }, [data, query, severity, ack]);
+
   return (
     <div>
       <h1 className="text-3xl font-serif font-bold text-compost-900 mb-1">Alerts</h1>
       <p className="text-text-secondary mb-8">Most recent threshold breaches across all devices.</p>
-      <DataTable columns={columns} rows={data} loading={loading} error={error} empty="No alerts." />
+
+      <Toolbar>
+        <SearchInput value={query} onChange={setQuery} placeholder="Search metric, message, device…" />
+        <FilterSelect
+          label="Severity"
+          value={severity}
+          onChange={setSeverity}
+          options={[
+            { label: 'All', value: 'all' },
+            { label: 'Critical', value: 'CRITICAL' },
+            { label: 'Warning', value: 'WARNING' },
+          ]}
+        />
+        <FilterSelect
+          label="Acknowledged"
+          value={ack}
+          onChange={setAck}
+          options={[
+            { label: 'All', value: 'all' },
+            { label: 'Acknowledged', value: 'acked' },
+            { label: 'Unacknowledged', value: 'unacked' },
+          ]}
+        />
+      </Toolbar>
+
+      <DataTable columns={columns} rows={rows} loading={loading} error={error} empty="No matching alerts." />
     </div>
   );
 }

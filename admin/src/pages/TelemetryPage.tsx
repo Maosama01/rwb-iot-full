@@ -2,10 +2,13 @@
 // ──────────────────────────────────
 // Most recent sensor readings across all devices (GET /admin/readings).
 // Defaults to the latest 100; the backend caps the limit.
+// Client-side search by device name.
 
+import { useMemo, useState } from 'react';
 import { api } from '../api/client';
 import { useFetch } from '../hooks/useFetch';
 import DataTable, { Column } from '../components/DataTable';
+import { Toolbar, SearchInput } from '../components/Filters';
 import { fmtDateTime, fmtNum } from '../lib/format';
 
 interface ReadingRow {
@@ -34,11 +37,25 @@ const columns: Column<ReadingRow>[] = [
 export default function TelemetryPage() {
   const { data, loading, error } = useFetch<ReadingRow[]>(() => api.listReadings());
 
+  const [query, setQuery] = useState('');
+
+  const rows = useMemo(() => {
+    if (!data) return null;
+    const q = query.trim().toLowerCase();
+    if (!q) return data;
+    return data.filter((r) => (r.device_name || '').toLowerCase().includes(q));
+  }, [data, query]);
+
   return (
     <div>
       <h1 className="text-3xl font-serif font-bold text-compost-900 mb-1">Telemetry</h1>
       <p className="text-text-secondary mb-8">Latest 100 sensor readings across all devices.</p>
-      <DataTable columns={columns} rows={data} loading={loading} error={error} empty="No readings yet." />
+
+      <Toolbar>
+        <SearchInput value={query} onChange={setQuery} placeholder="Search by device name…" />
+      </Toolbar>
+
+      <DataTable columns={columns} rows={rows} loading={loading} error={error} empty="No matching readings." />
     </div>
   );
 }
