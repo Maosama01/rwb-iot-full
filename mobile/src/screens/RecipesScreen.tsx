@@ -4,6 +4,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import * as ImagePicker from 'expo-image-picker';
 import apiClient from '../api/client';
+import { AskRawbinCard } from '../components/AIChatWidget';
 
 export function RecipesScreen() {
   const [ingredients, setIngredients] = useState<string[]>([]);
@@ -183,6 +184,14 @@ export function RecipesScreen() {
                  <Image source={require('../../assets/save_my_food_bin_1783001503844.png')} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
               </View>
             </View>
+
+            {/* Conversational AI assistant */}
+            <AskRawbinCard
+              style={{ marginHorizontal: 24, marginBottom: 8 }}
+              title="Ask Rawbin AI"
+              subtitle="Food scraps & compost questions"
+              greeting="Hi! Ask me about composting your food scraps or keeping your Rawbin healthy."
+            />
 
             {!showRecipes ? (
               <View className="px-6 mt-4">

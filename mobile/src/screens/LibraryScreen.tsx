@@ -6,6 +6,7 @@ import { useAudioRecorder, RecordingPresets, requestRecordingPermissionsAsync, s
 import * as FileSystem from 'expo-file-system';
 import * as ImagePicker from 'expo-image-picker';
 import apiClient from '../api/client';
+import { AskRawbinCard } from '../components/AIChatWidget';
 
 export function LibraryScreen() {
   const [activeTab, setActiveTab] = useState<'item' | 'category'>('item');
@@ -349,6 +350,14 @@ export function LibraryScreen() {
 
         {activeTab === 'item' ? (
           <ScrollView className="flex-1 px-6" showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+            {/* Conversational AI assistant */}
+            <AskRawbinCard
+              style={{ marginBottom: 20 }}
+              title="Ask Rawbin AI"
+              subtitle="Not sure? Chat about any item"
+              greeting="Hi! Ask me whether something's compostable, or how to keep your Rawbin healthy."
+            />
+
             {/* Result Card */}
             {result && renderResultCard()}
 

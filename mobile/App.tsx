@@ -24,7 +24,6 @@ import { CompostingGuideScreen } from './src/screens/CompostingGuideScreen';
 import { DevicePairingScreen } from './src/screens/DevicePairingScreen';
 import { AlertsScreen } from './src/screens/AlertsScreen';
 import { GlobalNotificationBanner } from './src/components/GlobalNotificationBanner';
-import { AIChatWidget } from './src/components/AIChatWidget';
 import { OnboardingScreen } from './src/screens/OnboardingScreen';
 import { FirmwareUpdateScreen } from './src/screens/FirmwareUpdateScreen';
 
@@ -129,16 +128,12 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
 
 function MainTabs() {
   return (
-    <View style={{ flex: 1 }}>
-      <Tab.Navigator tabBar={(props) => <CustomTabBar {...props} />} screenOptions={{ headerShown: false }}>
-        <Tab.Screen name="Home" component={DashboardScreen} options={{ tabBarLabel: 'Home' }} />
-        <Tab.Screen name="Compost Check" component={LibraryScreen} options={{ tabBarLabel: 'Can It Compost?' }} />
-        <Tab.Screen name="Exchange" component={MarketplaceScreen} options={{ tabBarLabel: 'Exchange' }} />
-        <Tab.Screen name="Use It Up" component={RecipesScreen} options={{ tabBarLabel: 'SaveMyFood' }} />
-      </Tab.Navigator>
-      {/* Floating AI assistant — available across all main tabs, like the web dashboard */}
-      <AIChatWidget />
-    </View>
+    <Tab.Navigator tabBar={(props) => <CustomTabBar {...props} />} screenOptions={{ headerShown: false }}>
+      <Tab.Screen name="Home" component={DashboardScreen} options={{ tabBarLabel: 'Home' }} />
+      <Tab.Screen name="Compost Check" component={LibraryScreen} options={{ tabBarLabel: 'Can It Compost?' }} />
+      <Tab.Screen name="Exchange" component={MarketplaceScreen} options={{ tabBarLabel: 'Exchange' }} />
+      <Tab.Screen name="Use It Up" component={RecipesScreen} options={{ tabBarLabel: 'SaveMyFood' }} />
+    </Tab.Navigator>
   );
 }
 

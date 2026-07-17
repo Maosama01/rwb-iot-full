@@ -10,6 +10,8 @@ import {
   Platform,
   ActivityIndicator,
   StyleSheet,
+  StyleProp,
+  ViewStyle,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Ionicons } from '@expo/vector-icons';
@@ -17,33 +19,47 @@ import apiClient from '../api/client';
 
 // ── Palette (mirrors the mobile app's greens) ────────────────────────────────
 const GREEN = '#5C8D42';
-const GREEN_DARK = '#214F25';
 const CREAM = '#FAF7F0';
 const BORDER = '#E9ECEF';
 const INK = '#1C1C1E';
+
+const DEFAULT_GREETING =
+  "Hi! I'm your Rawbin AI assistant. Ask me anything about your compost health or what you can put in the bin!";
 
 interface Message {
   role: 'user' | 'ai';
   content: string;
 }
 
-const GREETING: Message = {
-  role: 'ai',
-  content:
-    "Hi! I'm your Rawbin AI assistant. Ask me anything about your compost health or what you can put in the bin!",
-};
+export interface AskRawbinCardProps {
+  /** CTA title shown on the in-screen card. */
+  title?: string;
+  /** CTA subtitle — use it to give the tab-specific hint. */
+  subtitle?: string;
+  /** First message the assistant shows when the chat opens. */
+  greeting?: string;
+  /** Extra style for the card container (e.g. margins for the host screen). */
+  style?: StyleProp<ViewStyle>;
+}
 
 /**
- * Floating "Ask Rawbin" assistant. Renders a FAB that expands into a full-screen
- * chat modal, talking to the existing POST /ai/ask endpoint (the same bot used on
- * the web dashboard). Device-scoped: it grounds answers on the first accessible
- * device's live telemetry, matching how the Dashboard picks a device.
+ * Embeddable "Ask Rawbin" entry point. Renders an in-screen CTA card that opens
+ * a full-screen chat modal backed by the existing POST /ai/ask endpoint (the same
+ * bot used on the web dashboard). Device-scoped: it grounds answers on the first
+ * accessible device's live telemetry, matching how the Dashboard picks a device.
  */
-export function AIChatWidget() {
+export function AskRawbinCard({
+  title = 'Ask Rawbin AI',
+  subtitle = 'Chat about your compost',
+  greeting = DEFAULT_GREETING,
+  style,
+}: AskRawbinCardProps) {
   const insets = useSafeAreaInsets();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [messages, setMessages] = useState<Message[]>([GREETING]);
+  const [messages, setMessages] = useState<Message[]>(() => [
+    { role: 'ai', content: greeting },
+  ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
 
@@ -67,16 +83,18 @@ export function AIChatWidget() {
         setDeviceId(devices[0].id);
       }
     } catch (err: any) {
-      setDeviceError('Could not load your devices. Pull to retry.');
+      setDeviceError('Could not load your devices. Try reopening the chat.');
       setDeviceId(null);
     } finally {
       setDeviceLoading(false);
     }
   }, []);
 
-  useEffect(() => {
-    loadDevice();
-  }, [loadDevice]);
+  const openChat = () => {
+    setIsOpen(true);
+    // Refetch the device on open if we don't have one yet (e.g. paired later).
+    if (!deviceId) loadDevice();
+  };
 
   const scrollToBottom = useCallback(() => {
     scrollRef.current?.scrollToEnd({ animated: true });
@@ -84,7 +102,6 @@ export function AIChatWidget() {
 
   useEffect(() => {
     if (isOpen) {
-      // Defer so layout settles before scrolling.
       const t = setTimeout(scrollToBottom, 50);
       return () => clearTimeout(t);
     }
@@ -121,22 +138,25 @@ export function AIChatWidget() {
 
   const disabled = loading || !deviceId;
 
-  // FAB sits above the floating tab bar (bottom pill ≈ 64pt tall at inset+24).
-  const fabBottom = Math.max(insets.bottom, 24) + 76;
-
   return (
     <>
-      {/* Floating action button */}
-      {!isOpen && (
-        <TouchableOpacity
-          activeOpacity={0.85}
-          onPress={() => setIsOpen(true)}
-          style={[styles.fab, { bottom: fabBottom }]}
-          accessibilityLabel="Open Rawbin AI assistant"
-        >
-          <Ionicons name="sparkles" size={26} color="#FFFFFF" />
-        </TouchableOpacity>
-      )}
+      {/* In-screen CTA card */}
+      <TouchableOpacity
+        activeOpacity={0.85}
+        onPress={openChat}
+        style={[styles.card, style]}
+        accessibilityRole="button"
+        accessibilityLabel={`${title}. ${subtitle}`}
+      >
+        <View style={styles.cardIcon}>
+          <Ionicons name="sparkles" size={22} color="#FFFFFF" />
+        </View>
+        <View style={styles.cardTextWrap}>
+          <Text style={styles.cardTitle}>{title}</Text>
+          <Text style={styles.cardSubtitle}>{subtitle}</Text>
+        </View>
+        <Ionicons name="chevron-forward" size={20} color={GREEN} />
+      </TouchableOpacity>
 
       <Modal
         visible={isOpen}
@@ -257,22 +277,45 @@ export function AIChatWidget() {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  fab: {
-    position: 'absolute',
-    right: 20,
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+
+  // ── In-screen CTA card ──
+  card: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: BORDER,
+    borderRadius: 20,
+    padding: 16,
+    gap: 14,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.06,
+    shadowRadius: 12,
+    elevation: 2,
+  },
+  cardIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     backgroundColor: GREEN,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.25,
-    shadowRadius: 12,
-    elevation: 8,
-    zIndex: 50,
   },
+  cardTextWrap: { flex: 1 },
+  cardTitle: {
+    fontSize: 16,
+    color: INK,
+    fontFamily: 'Nunito_700Bold',
+  },
+  cardSubtitle: {
+    fontSize: 13,
+    color: '#6F6F6F',
+    marginTop: 2,
+    fontFamily: 'Nunito_400Regular',
+  },
+
+  // ── Chat modal ──
   modalRoot: { flex: 1, backgroundColor: CREAM },
   header: {
     backgroundColor: GREEN,
@@ -373,4 +416,4 @@ const styles = StyleSheet.create({
   sendBtnDisabled: { opacity: 0.5 },
 });
 
-export default AIChatWidget;
+export default AskRawbinCard;
