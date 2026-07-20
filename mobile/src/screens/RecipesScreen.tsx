@@ -181,7 +181,7 @@ export function RecipesScreen() {
               </View>
               {/* Decorative Illustration */}
               <View className="w-24 h-24">
-                 <Image source={require('../../assets/save_my_food_bin_1783001503844.png')} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
+                 <Image source={require('../../assets/save_my_food_bin_1783001503844.jpg')} style={{ width: '100%', height: '100%' }} resizeMode="contain" />
               </View>
             </View>
 
@@ -225,7 +225,7 @@ export function RecipesScreen() {
                       {/* Snap Your Fridge Card */}
                       <TouchableOpacity onPress={handleSnapFridge} className="w-[48%] bg-white rounded-3xl p-6 items-center shadow-sm shadow-[#2C1E16]/5">
                         <View className="w-16 h-16 bg-[#F0F5EC] rounded-full items-center justify-center mb-4 overflow-hidden">
-                          <Image source={require('../../assets/camera_icon_1783001521021.png')} style={{width: 50, height: 50}} resizeMode="contain" />
+                          <Image source={require('../../assets/camera_icon_1783001521021.jpg')} style={{width: 50, height: 50}} resizeMode="contain" />
                         </View>
                         <Text className="text-[#2C1E16] font-nunito-black text-sm text-center mb-1">Snap Your Fridge</Text>
                         <Text className="text-[#7A6A5A] font-nunito-regular text-[11px] text-center">Take a photo of your leftovers</Text>
@@ -234,7 +234,7 @@ export function RecipesScreen() {
                       {/* Type Your Leftovers Card */}
                       <TouchableOpacity onPress={() => setIsTyping(!isTyping)} className="w-[48%] bg-white rounded-3xl p-6 items-center shadow-sm shadow-[#2C1E16]/5">
                         <View className="w-16 h-16 bg-[#F5F2EA] rounded-full items-center justify-center mb-4 overflow-hidden">
-                          <Image source={require('../../assets/pencil_icon_1783001540716.png')} style={{width: 50, height: 50}} resizeMode="contain" />
+                          <Image source={require('../../assets/pencil_icon_1783001540716.jpg')} style={{width: 50, height: 50}} resizeMode="contain" />
                         </View>
                         <Text className="text-[#2C1E16] font-nunito-black text-sm text-center mb-1">Type Your Leftovers</Text>
                         <Text className="text-[#7A6A5A] font-nunito-regular text-[11px] text-center">List what you have at home</Text>
@@ -283,7 +283,7 @@ export function RecipesScreen() {
                     )}
                   </View>
                   <View className="w-16 h-16 bg-white rounded-full items-center justify-center absolute right-4 -top-5 z-10 shadow-sm shadow-black/10 border border-[#E5E0D8] overflow-hidden">
-                    <Image source={require('../../assets/food_bowl_1783001558655.png')} style={{width: '120%', height: '120%'}} resizeMode="cover" />
+                    <Image source={require('../../assets/food_bowl_1783001558655.jpg')} style={{width: '120%', height: '120%'}} resizeMode="cover" />
                   </View>
                 </View>
 
@@ -329,7 +329,7 @@ export function RecipesScreen() {
                       {/* Recipe Card Header */}
                       <TouchableOpacity onPress={() => setExpandedRecipe(expandedRecipe === index ? null : index)} className="p-6 flex-row items-center border-b border-[#F0F0F0]">
                         <View className="w-16 h-16 bg-[#EFE8F5] rounded-full items-center justify-center mr-4 overflow-hidden">
-                          <Image source={require('../../assets/recipe_hash_1783001598798.png')} style={{width: '100%', height: '100%'}} resizeMode="cover" />
+                          <Image source={require('../../assets/recipe_hash_1783001598798.jpg')} style={{width: '100%', height: '100%'}} resizeMode="cover" />
                         </View>
                         <View className="flex-1">
                           <Text className="text-[#2C1E16] font-nunito-black text-xl mb-2 leading-tight">{recipe.title}</Text>

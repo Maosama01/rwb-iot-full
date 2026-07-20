@@ -5,7 +5,7 @@ import { useDevices } from '../context/DeviceContext';
 import { format } from 'date-fns';
 import { useToast } from '../context/ToastContext';
 import PredictiveInsightsWidget from '../components/PredictiveInsightsWidget';
-
+import AskRawbinCard from '../components/AskRawbinCard';
 
 export default function CompostPage() {
   const { selectedDevice } = useDevices();
@@ -97,7 +97,16 @@ export default function CompostPage() {
         <h1 className="text-4xl font-bold text-text-primary tracking-tight mb-2 flex items-center gap-3">
           Compost Analytics <Leaf className="text-primary-dark" size={32} />
         </h1>
-        <p className="text-text-secondary font-medium">Manage active cycles and log waste for {selectedDevice.display_name}.</p>
+        <p className="text-text-secondary font-medium mb-6">Manage active cycles and log waste for {selectedDevice.display_name}.</p>
+        
+        <div className="max-w-3xl">
+          <AskRawbinCard 
+            title="Ask Rawbin AI"
+            subtitle="Analyze your compost health"
+            greeting="Hi! Ask me about your current compost cycle, temperature trends, or how to fix a smelly bin."
+            className="mb-8"
+          />
+        </div>
       </div>
 
       <div className="max-w-3xl">

@@ -21,6 +21,7 @@ from app.db.models.plant import Plant
 from app.db.models.compost_application import CompostApplication
 from app.db.models.compost_item_cache import CompostItemCache
 from app.db.models.exchange import Exchange
+from app.db.models.marketplace_offer import MarketplaceOffer
 
 __all__ = [
     "User",
@@ -36,4 +37,5 @@ __all__ = [
     "CompostApplication",
     "CompostItemCache",
     "Exchange",
+    "MarketplaceOffer",
 ]

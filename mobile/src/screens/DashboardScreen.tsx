@@ -431,7 +431,7 @@ export function DashboardScreen() {
     <SafeAreaView style={styles.container}>
       {/* New Dedicated Background Image generated matching spec */}
       <Image 
-        source={require('../../assets/background_dashboard.png')} 
+        source={require('../../assets/background_dashboard.jpg')} 
         style={styles.fullScreenBgImage}
       />
 

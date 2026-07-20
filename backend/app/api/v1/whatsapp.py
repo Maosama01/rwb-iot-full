@@ -39,7 +39,35 @@ async def twilio_whatsapp_webhook(request: Request, db: DbSession):
     resp = MessagingResponse()
     msg = resp.message()
 
-    if body in ["YES", "हाँ", "हा", "HAA", "HAN", "HAAN"]:
+    import re
+    from app.db.models.marketplace_offer import MarketplaceOffer
+
+    if body.startswith("OFFER"):
+        # Expected format: OFFER <compost> FOR <reward> TYPE <action_type>
+        # Example: OFFER 5kg FOR seeds TYPE drop_off
+        match = re.search(r"OFFER\s+(.+?)\s+FOR\s+(.+?)\s+TYPE\s+(PICK_UP|DROP_OFF|PICKUP|DROPOFF)", body, re.IGNORECASE)
+        if match:
+            compost_req, reward, action_type_raw = match.groups()
+            action_type_raw = action_type_raw.upper()
+            action_type = "pick_up" if "PICK" in action_type_raw else "drop_off"
+            
+            offer = MarketplaceOffer(
+                vendor_phone=phone,
+                vendor_name="WhatsApp Vendor",
+                vendor_type="nursery",
+                action_type=action_type,
+                reward_type=reward.lower(),
+                compost_required=compost_req,
+                plant_offered=reward,
+                is_active=True
+            )
+            db.add(offer)
+            await db.commit()
+            msg.body(f"Offer created! You are offering {reward} for {compost_req} via {action_type.replace('_', ' ')}.")
+        else:
+            msg.body("Invalid offer format. Please use: OFFER <compost_amount> FOR <reward> TYPE <pick_up|drop_off>. Example: OFFER 5kg FOR seeds TYPE pick_up")
+
+    elif body in ["YES", "हाँ", "हा", "HAA", "HAN", "HAAN"]:
         # Find the most recent pending exchange for this vendor
         result = await db.execute(
             select(Exchange)

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { Search, Info, CheckCircle2, XCircle, ChevronRight, Apple, Croissant, Milk, Drumstick, Cake, Leaf as LeafIcon, Package } from 'lucide-react';
 import { foodLibrary, FoodItem, FoodCategory } from '../utils/foodData';
+import AskRawbinCard from '../components/AskRawbinCard';
 
 const categoryIcons: Record<FoodCategory, React.ElementType> = {
   'Fruits & Vegetables': Apple,
@@ -84,9 +85,17 @@ export default function LibraryPage() {
         <h1 className="text-4xl md:text-5xl font-serif font-bold text-compost-900 tracking-tight mb-4">
           What can go in Rawbin?
         </h1>
-        <p className="text-xl text-compost-500 font-medium max-w-lg mx-auto">
+        <p className="text-xl text-compost-500 font-medium max-w-lg mx-auto mb-8">
           Search from thousands of tested items, so you always know exactly what to add.
         </p>
+        
+        <div className="max-w-2xl mx-auto text-left">
+          <AskRawbinCard 
+            title="Ask Rawbin AI"
+            subtitle="Not sure? Chat about any item"
+            greeting="Hi! Ask me whether something's compostable, or how to keep your Rawbin healthy."
+          />
+        </div>
       </div>
 
       <div className="relative max-w-2xl mx-auto mb-12">

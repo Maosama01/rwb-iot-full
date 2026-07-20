@@ -150,8 +150,12 @@ export default function App() {
   useEffect(() => {
     async function checkOnboarding() {
       try {
-        // Force onboarding to show for presentations
-        setInitialRoute('Onboarding');
+        const hasSeen = await AsyncStorage.getItem('has_seen_onboarding');
+        if (hasSeen === 'true') {
+          setInitialRoute('Login');
+        } else {
+          setInitialRoute('Onboarding');
+        }
       } catch (e) {
         setInitialRoute('Onboarding');
       } finally {

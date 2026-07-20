@@ -32,76 +32,15 @@ interface Offer {
   actionType: 'drop_off' | 'pick_up';
   vendorType: 'nursery' | 'cart_puller';
   rewardType: 'plant' | 'seeds' | 'discount';
+  vendorPhone: string;
   currentLocationText?: string;
   validUntil?: string;
 }
 
-const mockOffers: Offer[] = [
-  {
-    id: '1',
-    nurseryName: 'Lalbagh Botanicals',
-    plantOffered: 'Rose Plant 🌹',
-    compostRequired: '3kg',
-    distance: '1.2 km away',
-    timeEst: '5 mins drive',
-    availableSlots: ['Today 4PM-6PM', 'Tomorrow 10AM-12PM'],
-    imageColor: '#D2691E',
-    coordinate: { latitude: 12.9150, longitude: 77.6400 },
-    actionType: 'drop_off',
-    vendorType: 'nursery',
-    rewardType: 'plant',
-    validUntil: 'Today 6:00 PM',
-  },
-  {
-    id: '2',
-    nurseryName: 'Koramangala Greenery',
-    plantOffered: 'Marigold Seeds 🌼',
-    compostRequired: '500g',
-    distance: '2.5 km away',
-    timeEst: '10 mins drive',
-    availableSlots: ['Today 2PM-4PM', 'Tomorrow 4PM-6PM'],
-    imageColor: '#2E8B57',
-    coordinate: { latitude: 12.9250, longitude: 77.6300 },
-    actionType: 'drop_off',
-    vendorType: 'nursery',
-    rewardType: 'seeds',
-    validUntil: 'Tomorrow 12:00 PM',
-  },
-  {
-    id: '3',
-    nurseryName: 'Ramu (Cart Puller)',
-    plantOffered: '₹50 Store Credit 💸',
-    compostRequired: '2kg',
-    distance: '0.8 km away',
-    timeEst: 'Moving',
-    availableSlots: ['Today 5PM-7PM', 'Tomorrow 9AM-11AM'],
-    imageColor: '#4682B4',
-    actionType: 'pick_up',
-    vendorType: 'cart_puller',
-    rewardType: 'discount',
-    currentLocationText: 'Currently near HSR Layout Sector 2',
-    validUntil: 'Today 7:00 PM',
-  },
-  {
-    id: '4',
-    nurseryName: 'Suresh (Mobile Nursery)',
-    plantOffered: 'Potted Basil 🌿',
-    compostRequired: '1.5kg',
-    distance: '1.5 km away',
-    timeEst: 'Moving',
-    availableSlots: ['Today 6PM-8PM', 'Tomorrow 11AM-1PM'],
-    imageColor: '#8B4513',
-    actionType: 'pick_up',
-    vendorType: 'cart_puller',
-    rewardType: 'plant',
-    currentLocationText: 'Currently near Indiranagar 100ft Rd',
-    validUntil: 'Only 2 left',
-  }
-];
-
 export function MarketplaceScreen() {
   const [actionFilter, setActionFilter] = useState<'all' | 'drop_off' | 'pick_up'>('all');
   const [rewardFilter, setRewardFilter] = useState<'all' | 'plant' | 'seeds' | 'discount'>('all');
+  const [offers, setOffers] = useState<Offer[]>([]);
   
   const [bookingModalVisible, setBookingModalVisible] = useState(false);
   const [bookingOffer, setBookingOffer] = useState<Offer | null>(null);
@@ -112,7 +51,17 @@ export function MarketplaceScreen() {
 
   useEffect(() => {
     fetchMyExchanges();
+    fetchOffers();
   }, []);
+
+  const fetchOffers = async () => {
+    try {
+      const response = await apiClient.get('/marketplace/offers');
+      setOffers(response.data.offers || []);
+    } catch (err) {
+      console.warn("Could not fetch offers", err);
+    }
+  };
 
   const fetchMyExchanges = async () => {
     try {
@@ -127,7 +76,7 @@ export function MarketplaceScreen() {
     }
   };
 
-  const filteredOffers = mockOffers.filter(offer => {
+  const filteredOffers = offers.filter(offer => {
     if (actionFilter !== 'all' && offer.actionType !== actionFilter) return false;
     if (rewardFilter !== 'all' && offer.rewardType !== rewardFilter) return false;
     return true;
@@ -154,7 +103,7 @@ export function MarketplaceScreen() {
 
     try {
       await apiClient.post('/marketplace/exchanges', {
-        vendor_phone: "+1234567890", // Mocked phone for demo
+        vendor_phone: bookingOffer.vendorPhone,
         vendor_name: bookingOffer.nurseryName,
         compost_amount: bookingOffer.compostRequired,
         reward_type: bookingOffer.rewardType,

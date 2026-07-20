@@ -9,13 +9,16 @@ interface Message {
 }
 
 interface AIChatWidgetProps {
-  inline?: boolean;
+  greeting?: string;
+  className?: string;
 }
 
-export default function AIChatWidget({ inline = false }: AIChatWidgetProps) {
-  const [isOpen, setIsOpen] = useState(inline);
+export default function AIChatWidget({ 
+  greeting = "Hi! I'm your Rawbin AI assistant. Ask me anything about your compost health or what you can put in the bin!",
+  className = ""
+}: AIChatWidgetProps) {
   const [messages, setMessages] = useState<Message[]>([
-    { role: 'ai', content: "Hi! I'm your Rawbin AI assistant. Ask me anything about your compost health or what you can put in the bin!" }
+    { role: 'ai', content: greeting }
   ]);
   const [input, setInput] = useState('');
   const [loading, setLoading] = useState(false);
@@ -27,8 +30,8 @@ export default function AIChatWidget({ inline = false }: AIChatWidgetProps) {
   };
 
   useEffect(() => {
-    if (isOpen) scrollToBottom();
-  }, [messages, isOpen]);
+    scrollToBottom();
+  }, [messages]);
 
   const handleSend = async () => {
     if (!input.trim() || !selectedDevice) return;
@@ -48,25 +51,20 @@ export default function AIChatWidget({ inline = false }: AIChatWidgetProps) {
     }
   };
 
-  const chatInterface = (
-    <div className={`flex flex-col h-full bg-white ${inline ? 'rounded-3xl shadow-organic-sm border border-border h-[400px]' : 'rounded-2xl shadow-organic-lg border border-border h-[500px] w-[350px] max-w-[calc(100vw-2rem)] max-h-[calc(100vh-2rem)]'}`}>
+  return (
+    <div className={`flex flex-col bg-white rounded-3xl shadow-organic-sm border border-border overflow-hidden ${className}`}>
       {/* Header */}
-      <div className="bg-leaf-600 text-white p-4 rounded-t-3xl flex justify-between items-center shrink-0">
+      <div className="bg-leaf-600 text-white p-4 flex justify-between items-center shrink-0">
         <div className="flex items-center gap-3">
           <div className="bg-white/20 p-1.5 rounded-full">
             <Bot size={22} />
           </div>
           <h3 className="font-serif font-bold text-lg">Ask Rawbin</h3>
         </div>
-        {!inline && (
-          <button onClick={() => setIsOpen(false)} className="text-white/80 hover:text-white transition-colors p-1 rounded-full hover:bg-white/10">
-            <X size={20} />
-          </button>
-        )}
       </div>
 
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-cream-50">
+      <div className="flex-1 overflow-y-auto p-4 space-y-4 bg-cream-50 min-h-[300px]">
         {!selectedDevice ? (
           <div className="text-center text-compost-500 text-sm mt-10">
             Please select a device to use the AI assistant.
@@ -92,7 +90,7 @@ export default function AIChatWidget({ inline = false }: AIChatWidgetProps) {
       </div>
 
       {/* Input Area */}
-      <div className="p-3 bg-white border-t border-border rounded-b-3xl shrink-0">
+      <div className="p-3 bg-white border-t border-border shrink-0">
         <div className="flex items-center gap-2 relative">
           <input 
             type="text"
@@ -113,24 +111,5 @@ export default function AIChatWidget({ inline = false }: AIChatWidgetProps) {
         </div>
       </div>
     </div>
-  );
-
-  if (inline) {
-    return chatInterface;
-  }
-
-  return (
-    <>
-      <button 
-        onClick={() => setIsOpen(true)}
-        className={`fixed bottom-28 right-6 md:bottom-10 md:right-10 w-14 h-14 bg-leaf-600 hover:bg-leaf-900 text-white rounded-full shadow-organic-md flex items-center justify-center transition-transform hover:scale-110 z-50 ${isOpen ? 'scale-0 opacity-0' : 'scale-100 opacity-100'}`}
-      >
-        <Bot size={28} />
-      </button>
-
-      <div className={`fixed bottom-28 right-4 md:bottom-10 md:right-10 z-50 transition-all duration-300 origin-bottom-right ${isOpen ? 'scale-100 opacity-100' : 'scale-50 opacity-0 pointer-events-none'}`}>
-        {chatInterface}
-      </div>
-    </>
   );
 }

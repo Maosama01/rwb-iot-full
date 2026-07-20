@@ -12,6 +12,7 @@ from twilio.rest import Client
 
 from app.api.deps import DbSession, CurrentUser
 from app.db.models.exchange import Exchange
+from app.db.models.marketplace_offer import MarketplaceOffer
 from app.core.config import get_settings
 
 logger = logging.getLogger(__name__)
@@ -25,6 +26,40 @@ class ExchangeRequest(BaseModel):
     reward_type: str
     action_type: str
     vendor_type: str
+
+@router.get("/offers")
+async def get_offers(db: DbSession):
+    """Get all active marketplace offers."""
+    result = await db.execute(
+        select(MarketplaceOffer)
+        .where(MarketplaceOffer.is_active == True)
+        .order_by(MarketplaceOffer.created_at.desc())
+    )
+    offers = result.scalars().all()
+    
+    import random
+    colors = ['#D2691E', '#2E8B57', '#4682B4', '#8B4513']
+    
+    return {
+        "offers": [
+            {
+                "id": str(o.id),
+                "nurseryName": o.vendor_name,
+                "vendorPhone": o.vendor_phone,
+                "plantOffered": o.plant_offered,
+                "compostRequired": o.compost_required,
+                "distance": f"{random.uniform(0.5, 3.5):.1f} km away",
+                "timeEst": "5 mins drive" if o.action_type == "drop_off" else "Moving",
+                "availableSlots": ["Today 4PM-6PM", "Tomorrow 10AM-12PM"],
+                "imageColor": random.choice(colors),
+                "actionType": o.action_type,
+                "vendorType": o.vendor_type,
+                "rewardType": o.reward_type,
+                "validUntil": "Today 6:00 PM"
+            }
+            for o in offers
+        ]
+    }
 
 @router.get("/exchanges/count")
 async def get_exchanges_count(db: DbSession, current_user: CurrentUser):
@@ -85,7 +120,7 @@ async def create_exchange(
     # Attempt to send WhatsApp message if Twilio is configured
     twilio_sid = getattr(settings, "TWILIO_ACCOUNT_SID", None)
     twilio_token = getattr(settings, "TWILIO_AUTH_TOKEN", None)
-    twilio_phone = getattr(settings, "TWILIO_PHONE_NUMBER", "+14155238886")
+    twilio_phone = getattr(settings, "TWILIO_FROM_NUMBER", "+14155238886")
 
     if twilio_sid and twilio_token:
         try:

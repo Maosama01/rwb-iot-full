@@ -15,7 +15,6 @@ import AnalyticsPage from './pages/AnalyticsPage';
 import GardenPage from './pages/GardenPage';
 import LandingPage from './pages/LandingPage';
 import LibraryPage from './pages/LibraryPage';
-import AIChatWidget from './components/AIChatWidget';
 
 import React, { Component, ErrorInfo } from 'react';
 
@@ -54,9 +53,6 @@ function AppLayout({ children }: { children: React.ReactNode }) {
           {children}
         </div>
       </main>
-      <div className="md:hidden">
-        <AIChatWidget inline={false} />
-      </div>
     </div>
   );
 }
