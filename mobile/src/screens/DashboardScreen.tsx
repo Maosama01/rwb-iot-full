@@ -484,17 +484,15 @@ export function DashboardScreen() {
                 />
               </View>
               
-              {/* Inner subtle shadow layer */}
-              <View style={styles.progressCircleInner} />
-              
-              <View style={styles.progressCircle}>
-                <Text style={styles.compostingLabel}>COMPOSTING</Text>
-                <Text style={styles.daysNumber}>{daysRemaining}</Text>
-                <Text style={styles.daysLabel}>Days Remaining</Text>
+              {/* Inner subtle shadow layer & Content */}
+              <View style={styles.progressCircleInner}>
+                <Text style={styles.compostingLabel} adjustsFontSizeToFit numberOfLines={1}>COMPOSTING</Text>
+                <Text style={styles.daysNumber} adjustsFontSizeToFit numberOfLines={1}>{daysRemaining}</Text>
+                <Text style={styles.daysLabel} adjustsFontSizeToFit numberOfLines={1}>Days Remaining</Text>
                 <View style={styles.phaseDivider} />
-                <View style={{flexDirection: 'row', alignItems: 'center'}}>
-                  <Ionicons name={phaseInfo.phaseIcon as any} size={12} color="#63B32E" style={{marginRight: 6}} />
-                  <Text style={styles.phaseText}>{phaseInfo.phaseText}</Text>
+                <View style={{flexDirection: 'row', alignItems: 'center', justifyContent: 'center', width: '100%'}}>
+                  <Ionicons name={phaseInfo.phaseIcon as any} size={14} color="#63B32E" style={{marginRight: 4}} />
+                  <Text style={[styles.phaseText, { flexShrink: 1 }]} adjustsFontSizeToFit numberOfLines={1}>{phaseInfo.phaseText}</Text>
                 </View>
               </View>
             </View>
@@ -832,17 +830,11 @@ const styles = StyleSheet.create({
     shadowRadius: 12,
     shadowOffset: { width: 0, height: 6 },
     elevation: 1,
-  },
-  progressCircle: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    width: 240,
-    height: 240,
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 5,
+    paddingHorizontal: 16,
   },
+
   compostingLabel: {
     fontSize: 12,
     fontWeight: '600',

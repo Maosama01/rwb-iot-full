@@ -10,6 +10,7 @@ import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import { Ionicons } from '@expo/vector-icons';
 import * as SplashScreen from 'expo-splash-screen';
 import { useFonts, Nunito_400Regular, Nunito_700Bold, Nunito_900Black } from '@expo-google-fonts/nunito';
+import { LinearGradient } from 'expo-linear-gradient';
 
 import { LoginScreen } from './src/screens/LoginScreen';
 import { DashboardScreen } from './src/screens/DashboardScreen';
@@ -41,22 +42,33 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
   return (
     <View style={{
       position: 'absolute',
-      bottom: Math.max(insets.bottom, 24),
-      left: 20,
-      right: 20,
-      flexDirection: 'row',
-      backgroundColor: '#FFFFFF',
-      height: 64,
-      borderRadius: 32,
-      shadowColor: '#000',
-      shadowOffset: { width: 0, height: 8 },
-      shadowOpacity: 0.1,
-      shadowRadius: 20,
-      elevation: 10,
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: 8,
+      bottom: 0,
+      left: 0,
+      right: 0,
+      height: 110 + insets.bottom,
+      justifyContent: 'flex-end',
     }}>
+      <LinearGradient
+        colors={['rgba(255, 253, 248, 0)', 'rgba(255, 253, 248, 0.9)', 'rgba(255, 253, 248, 1)']}
+        style={StyleSheet.absoluteFillObject}
+        pointerEvents="none"
+      />
+      <View style={{
+        marginBottom: Math.max(insets.bottom, 24),
+        marginHorizontal: 20,
+        flexDirection: 'row',
+        backgroundColor: '#FFFFFF',
+        height: 64,
+        borderRadius: 32,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 8 },
+        shadowOpacity: 0.1,
+        shadowRadius: 20,
+        elevation: 10,
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        paddingHorizontal: 8,
+      }}>
       {state.routes.map((route, index) => {
         const { options } = descriptors[route.key];
         const label = options.tabBarLabel !== undefined
@@ -122,6 +134,7 @@ function CustomTabBar({ state, descriptors, navigation }: BottomTabBarProps) {
           </TouchableOpacity>
         );
       })}
+      </View>
     </View>
   );
 }
